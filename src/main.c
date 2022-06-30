@@ -1,5 +1,6 @@
 #include "common.h"
 #include <arpa/inet.h>
+#include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -22,15 +23,17 @@ int main(int argc, const char* argv[])
     const int domain   = AF_INET; // (= PF_INET) Internet domain sockets for use with IPv4 addresses
     const int type     = SOCK_STREAM; // bitstream socket used in TCP
     const int protocol = 0; // default type of socket that works with the other chosen params
+    int on             = 1;
 
     // create a socket
-    int network_socket = socket(domain, type, protocol);
-    if (network_socket == -1)
+    int server_socket  = socket(domain, type, protocol);
+    if (server_socket == -1)
     {
         printf("Failed to create socket\n");
         return -1;
     }
 
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
     // specify address
     struct sockaddr_in server_address;
     server_address.sin_family      = AF_INET;
@@ -38,7 +41,7 @@ int main(int argc, const char* argv[])
     server_address.sin_addr.s_addr = INADDR_ANY; // htonl(0x7F000001 /*127.0.0.1*/);
 
     int bind_status
-        = bind(network_socket, (struct sockaddr*)&server_address, sizeof(server_address));
+        = bind(server_socket, (struct sockaddr*)&server_address, sizeof(server_address));
 
     if (bind_status == -1)
     {
@@ -47,7 +50,7 @@ int main(int argc, const char* argv[])
     }
 
     // listen to connections
-    if (listen(network_socket, SOMAXCONN) == -1)
+    if (listen(server_socket, SOMAXCONN) == -1)
     {
         printf("Failed to listen to socket\n");
         return -1;
@@ -57,37 +60,98 @@ int main(int argc, const char* argv[])
 
     while (1)
     {
-        int client_socket = accept(network_socket, (struct sockaddr*)&client, &client_size);
+        int client_socket = accept(server_socket, (struct sockaddr*)&client, &client_size);
 
         if (client_socket == -1)
         {
             printf("Problem with client connecting\n");
-            return -1;
+            continue;
         }
 
-        if (fork() == 0)
+        if (!fork())
         {
-            char buffer[MAX_MSG_LEN];
-            buffer[0] = 0;
-            memset(&buffer, 0, MAX_MSG_LEN);
+            // Child process
+            close(server_socket);
+            char in_buff[MAX_MSG_LEN];
+            char out_buff[512];
             // receive message from the client
-            int bytes_recv = recv(client_socket, &buffer, MAX_MSG_LEN, 0);
+            int bytes_recv;
+            printf("\n---------------------------\n\n");
+            memset(&in_buff, 0, MAX_MSG_LEN);
+            memset(&out_buff, 0, 512);
+            bytes_recv = read(client_socket, &in_buff, MAX_MSG_LEN);
 
+//            if (bytes_recv == 0)
+//            {
+//                printf("Connection closed by the client\n");
+//                return 0;
+//            }
+            if (bytes_recv == -1)
+            {
+                printf("Socket error\n");
+                return -1;
+            }
             printf("Client socket: %d - bytes %d\n", client_socket, bytes_recv);
-            printf("%s", buffer);
+            printf("%s\n", in_buff);
 
-            uint8_t out_buff[512] = "HTTP/1.0 200 OK\r\n\r\nHello\0";
-            write(client_socket, (char*)out_buff, strlen((char*)out_buff));
-            fprintf(stdout, (char*)out_buff, strlen((char*)out_buff));
+            if (strncmp(in_buff, "GET /favicon.ico", 16) == 0)
+            {
+                printf("Sending icon\n");
+                off_t len     = 0; // set to 0 will send all the origin file
+                int icon_file = open("assets/favicon.ico", O_RDONLY);
+                if (icon_file == -1)
+                {
+                    printf("Error opening icon file\n");
+                    return -1;
+                }
+                int res = sendfile(icon_file, client_socket, 0, &len, NULL, 0);
+                if (res == -1)
+                {
+                    perror("Failed to send file");
+                    return -1;
+                }
+                printf("Bytes sent: %lld\n", len);
+                close(icon_file);
+            }
+            else
+            {
+                FILE* index_html = fopen("assets/index.html", "r");
+                if (index_html == NULL)
+                {
+                    printf("Not good!\n");
+                    return -1;
+                }
+                fseek(index_html, 0L, SEEK_END);
+                int sz = ftell(index_html);
+                rewind(index_html);
 
+                sprintf(
+                    out_buff,
+                    "HTTP/1.0 200 OK\r\nContent-Type: text/html; "
+                    "charset=UTF-8\r\nContent-Length: "
+                    "%d\r\n\r\n",
+                    sz);
+                char c;
+                write(client_socket, (char*)out_buff, strlen((char*)out_buff));
+                //                fprintf(stdout, (char*)out_buff, strlen((char*)out_buff));
+                while ((c = getc(index_html)) != EOF)
+                {
+                    write(client_socket, (char*)&c, 1);
+                    //                    printf("%c", c);
+                }
+                fclose(index_html);
+            }
+            close(client_socket);
             printf("Closing socket Nr. %d\n", client_socket);
             shutdown(client_socket, SHUT_RDWR);
-            close(client_socket);
+
             return 0;
         }
         else
         {
+            // Parent process
             printf("Connection to socket nr. %d accepted.\n", client_socket);
+            close(client_socket);
         }
     }
 

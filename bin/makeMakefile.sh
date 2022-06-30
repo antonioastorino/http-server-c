@@ -92,20 +92,20 @@ pf "\n\t${BUILD_DIR}"
 pf "\n\t@if [ \"\$(MODE)\" = \"TEST\" ]; then \\"
 pf "\n\t[ \`grep -c '^#define TEST 0' \"\$(BD)\"/${COMMON_HEADER}\` -eq 1 ] && \\"
 pf "\n\tsed -i.bak 's/^#define TEST 0/#define TEST 1/g' \"\$(BD)\"/${COMMON_HEADER}; \\"
-pf "\n\tmake -C \"\$(BD)\" OPT=\$(OPT) ${BUILD_DIR}/${APP_NAME}-test-o\$(OPT); \\"
+pf "\n\tmake -C \"\$(BD)\" OPT=\$(OPT) ${BUILD_DIR}/${APP_NAME}-test; \\"
 pf "\n\telse \\"
 
 # Reset TEST in case as default behavior.
 pf "\n\t[ \`grep -c '^#define TEST 1' \"\$(BD)\"/${COMMON_HEADER}\` -eq 1 ] && \\"
 pf "\n\tsed -i.bak 's/^#define TEST 1/#define TEST 0/g' \"\$(BD)\"/${COMMON_HEADER}; \\"
-pf "\n\tmake -C \"\$(BD)\" OPT=\$(OPT) ${BUILD_DIR}/${APP_NAME}-o\$(OPT); \\"
+pf "\n\tmake -C \"\$(BD)\" OPT=\$(OPT) ${BUILD_DIR}/${APP_NAME}; \\"
 pf "\n\tfi"
 pf "\n"
 
-pf "\n${BUILD_DIR}/${APP_NAME}-o\$(OPT):"
+pf "\n${BUILD_DIR}/${APP_NAME}:"
 while read -r FILE_NAME; do
     pf "\\"
-    pf "\n\t${BUILD_DIR}/${FILE_NAME}-o\$(OPT).o "
+    pf "\n\t${BUILD_DIR}/${FILE_NAME}.o "
 done <src-name.list
 pf "\n\t${GLOBAL_COMPILER} \$(LIB) \$(MAINFLAGS) -O\$(OPT) \$(INC) \$(FRAMEWORKS) \$^ -o \$@"
 pf "\n"
@@ -117,7 +117,7 @@ while read -r FILE_FULL_PATH; do
     FILE_NO_EXT=${FILE_NAME%.*}
     FILE_EXT=${FILE_NAME##*.}
 
-    pf "\n${BUILD_DIR}/${FILE_NO_EXT}-o\$(OPT).o: ${FILE_FULL_PATH} "
+    pf "\n${BUILD_DIR}/${FILE_NO_EXT}.o: ${FILE_FULL_PATH} "
 
     HEADER_FILES=($(egrep "^#include|^#import" "${FILE_FULL_PATH}" | grep -v "<" | awk -F '"' '{print $2}'))
 
@@ -131,7 +131,7 @@ while read -r FILE_FULL_PATH; do
         pf "\n\t${HEADER_PATH_FROM_BD} "
         if ! [ "${HEADER_NO_EXT}" = "${FILE_NO_EXT}" ]; then
             pf "\\"
-            pf "\n\t${BUILD_DIR}/${HEADER_NO_EXT}-o\$(OPT).o "
+            pf "\n\t${BUILD_DIR}/${HEADER_NO_EXT}.o "
         fi
     done
 
