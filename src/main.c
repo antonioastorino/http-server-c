@@ -2,6 +2,7 @@
 #include "class_string.h"
 #include "common.h"
 #include "converter.h"
+#include "fs_utils.h"
 #include "http.h"
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -166,6 +167,7 @@ int main()
     test_class_string();
     test_class_json();
     test_converter();
+    test_fs_utils();
 }
 #else
 #error "TEST must be 0 or 1"

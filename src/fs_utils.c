@@ -1,8 +1,8 @@
+#include "class_string.h"
 #include "common.h"
 #include "fs_utils.h"
 #include "logger.h"
 #include "my_memory.h"
-#include "class_string.h"
 #include <errno.h>
 #include <fts.h>
 #include <stdio.h>
@@ -65,12 +65,12 @@ Error fs_utils_mkdir(const char* dir_path_char_p, mode_t permission)
     }
     else
     {
-        LOG_ERROR("The folder already exists.");
+        LOG_ERROR("The folder `%s` already exists.", dir_path_char_p);
         ret_res = ERR_FORBIDDEN;
     }
     // Restore the previous mask.
     umask(old_mask);
-    return ERR_ALL_GOOD;
+    return ret_res;
 }
 
 Error fs_utils_mkdir_p(const char* dir_path_char_p, mode_t permission)
@@ -185,7 +185,7 @@ Error fs_utils_create_with_content(const char* file_path_char_p, const char* new
     return _fs_utils_create_or_append(file_path_char_p, new_content_char_p, "w");
 }
 
-Error _fs_utils_read_to_string(const char* file_path_char_p, String* out_string_obj_p)
+Error _fs_utils_read_to_string(const char* file_path_char_p, String** out_string_obj_pp)
 {
     FILE* file_handler = fopen(file_path_char_p, "r");
     if (!file_handler)
@@ -220,7 +220,7 @@ Error _fs_utils_read_to_string(const char* file_path_char_p, String* out_string_
     }
     buf[chars_read++] = '\0';
     fclose(file_handler);
-    out_string_obj_p = String_new(buf);
+    (*out_string_obj_pp) = String_new(buf);
     FREE(buf);
     buf = NULL;
     return ERR_ALL_GOOD;
@@ -299,107 +299,83 @@ Error fs_utils_rm_r(const char* dir_path_char_p)
     return ret_res;
 }
 
-#if TEST == 2
+#if TEST == 1
 void test_fs_utils()
 {
     PRINT_BANNER();
-    Result_void_p res_void;
-    Error err;
+    Error ret_res;
     char* path_string;
     char* content_char_p;
     String* content_string;
 
     PRINT_TEST_TITLE("mkdir - pass")
     path_string = "test/artifacts/test_folder_0";
-    res_void    = fs_utils_mkdir(path_string, 0666);
-    ASSERT_EQ((int)res_void.err.code, ERR_ALL_GOOD, "`fs_utils_mkdir` works fine.");
+    ret_res     = fs_utils_mkdir(path_string, 0666);
+    ASSERT(ret_res == ERR_ALL_GOOD, "`fs_utils_mkdir` works fine.");
 
     PRINT_TEST_TITLE("mkdir - should fail")
-    res_void = fs_utils_mkdir(path_string, 0666);
-    ASSERT_EQ(
-        (int)res_void.err.code,
-        ERR_FOLDER_EXISTS,
-        "`fs_utils_mkdir` should fail if the folder exists.");
-
+    ret_res = fs_utils_mkdir(path_string, 0666);
+    ASSERT(ret_res == ERR_FORBIDDEN, "`fs_utils_mkdir` should fail if the folder exists.");
     PRINT_TEST_TITLE("mkdir -p - should fail")
-    res_void = fs_utils_mkdir_p(path_string, 0666);
-    ASSERT_EQ(
-        (int)res_void.err.code,
-        ERR_FOLDER_EXISTS,
-        "`fs_utils_mkdir` should fail if the folder exists.");
+    ret_res = fs_utils_mkdir_p(path_string, 0666);
+    ASSERT(ret_res == ERR_FORBIDDEN, "`fs_utils_mkdir_p` should fail if the folder exists.");
 
     PRINT_TEST_TITLE("mkdir -p - pass")
     path_string = "test/artifacts/test_folder_1/new_inner_folder/";
-    res_void    = fs_utils_mkdir_p(path_string, 0777);
-    ASSERT_EQ(
-        (int)res_void.err.code,
-        ERR_ALL_GOOD,
-        "`fs_utils_mkdir_p` works fine when the path ends with '/'.");
+    ret_res     = fs_utils_mkdir_p(path_string, 0777);
+    ASSERT(ret_res == ERR_ALL_GOOD, "`fs_utils_mkdir_p` works fine when the path ends with '/'.");
 
     PRINT_TEST_TITLE("mkdir -p - pass")
     path_string = "test/artifacts/test_folder_2/new_inner_folder";
-    res_void    = fs_utils_mkdir_p(path_string, 0777);
-    ASSERT_EQ(
-        (int)res_void.err.code,
-        ERR_ALL_GOOD,
+    ret_res     = fs_utils_mkdir_p(path_string, 0777);
+    ASSERT(
+        ret_res == ERR_ALL_GOOD,
         "`fs_utils_mkdir_p` works fine when the path does not end with '/'.");
 
     PRINT_TEST_TITLE("rmdir - pass")
     path_string = "test/artifacts/empty-0";
-    res_void    = fs_utils_rmdir(path_string);
-    ASSERT_EQ(
-        (int)res_void.err.code,
-        ERR_ALL_GOOD,
-        "`fs_utils_rmdir` works fine when the folder is empty.");
+    ret_res     = fs_utils_rmdir(path_string);
+    ASSERT(ret_res == ERR_ALL_GOOD, "`fs_utils_rmdir` works fine when the folder is empty.");
 
     PRINT_TEST_TITLE("rmdir - fail")
     path_string = "test/artifacts/non-empty-0";
-    err         = unwrap_err(fs_utils_rmdir(path_string));
-    ASSERT_EQ((int)err.code, 66, "`fs_utils_rmdir` should fail if the folder is not empty.");
+    ret_res     = fs_utils_rmdir(path_string);
+    ASSERT(ret_res == ERR_FS_INTERNAL, "`fs_utils_rmdir` should fail if the folder is not empty.");
 
     PRINT_TEST_TITLE("rm -r - pass")
     path_string = "test/artifacts/empty";
-    res_void    = fs_utils_rm_r(path_string);
-    ASSERT_EQ(
-        (int)res_void.err.code,
-        ERR_ALL_GOOD,
-        "`fs_utils_rm_r` works fine when the folder is empty.");
+    ret_res     = fs_utils_rm_r(path_string);
+    ASSERT(ret_res == ERR_ALL_GOOD, "`fs_utils_rm_r` works fine when the folder is empty.");
 
     PRINT_TEST_TITLE("rm -r - pass")
     path_string = "test/artifacts/non-empty";
-    res_void    = fs_utils_rm_r(path_string);
-    ASSERT_EQ(
-        (int)res_void.err.code,
-        ERR_ALL_GOOD,
-        "`fs_utils_rm_r` works fine when the folder is NOT empty.");
+    ret_res     = fs_utils_rm_r(path_string);
+    ASSERT(ret_res == ERR_ALL_GOOD, "`fs_utils_rm_r` works fine when the folder is NOT empty.");
 
     PRINT_TEST_TITLE("rm -r - fail")
     path_string = "test/artifacts/missing";
-    res_void    = fs_utils_rm_r(path_string);
-    ASSERT_EQ(
-        (int)res_void.err.code,
-        ERR_NOT_FOUND,
-        "`fs_utils_rm_r` should fail if the folder is missing.");
+    ret_res     = fs_utils_rm_r(path_string);
+    ASSERT(ret_res == ERR_INVALID, "`fs_utils_rm_r` should fail if the folder is missing.");
 
     PRINT_TEST_TITLE("rm -r - pass")
     path_string = "test/artifacts/delete_me.txt";
-    res_void    = fs_utils_rm_r(path_string);
-    ASSERT_EQ((int)res_void.err.code, ERR_ALL_GOOD, "`fs_utils_rm_r` should NOT fail on a file.");
+    ret_res     = fs_utils_rm_r(path_string);
+    ASSERT(ret_res == ERR_ALL_GOOD, "`fs_utils_rm_r` should NOT fail on a file.");
 
     PRINT_TEST_TITLE("read to string - short text, use const String*for file path");
-    path_string    = "test/assets/readme.txt";
-    content_string = unwrap(fs_utils_read_to_string(path_string));
+    path_string = "test/assets/readme.txt";
+    fs_utils_read_to_string(path_string, &content_string);
     ASSERT_EQ(content_string->str, "This is a very good string!", "File read correctly.");
     String_destroy(content_string);
 
     PRINT_TEST_TITLE("read to string - short text, use const char * for file path");
-    content_string = unwrap(fs_utils_read_to_string("test/assets/readme.txt"));
+    fs_utils_read_to_string("test/assets/readme.txt", &content_string);
     ASSERT_EQ(content_string->str, "This is a very good string!", "File read correctly.");
     String_destroy(content_string);
 
     PRINT_TEST_TITLE("read to string - long text");
-    path_string    = "test/assets/readme-long.txt";
-    content_string = unwrap(fs_utils_read_to_string(path_string));
+    path_string = "test/assets/readme-long.txt";
+    fs_utils_read_to_string(path_string, &content_string);
     ASSERT_EQ(content_string->length, 16599, "Read string size matches.");
     String_destroy(content_string);
 
@@ -408,7 +384,7 @@ void test_fs_utils()
     content_char_p = "this is new\n";
     fs_utils_append(path_string, content_char_p);
     fs_utils_append(path_string, content_char_p);
-    content_string = unwrap(fs_utils_read_to_string(path_string));
+    fs_utils_read_to_string(path_string, &content_string);
     ASSERT_EQ(
         content_string->str, "this is new\nthis is new\n", "File created and modified correctly");
     String_destroy(content_string);
@@ -420,8 +396,9 @@ void test_fs_utils()
     fs_utils_create_with_content(path_string, content_char_p);
     // Second time - overwrite.
     fs_utils_create_with_content(path_string, content_char_p);
-    content_string = unwrap(fs_utils_read_to_string(path_string));
+    fs_utils_read_to_string(path_string, &content_string);
     ASSERT_EQ(content_string->str, "this is new\n", "File created and modified correctly");
     String_destroy(content_string);
+    /**/
 }
 #endif

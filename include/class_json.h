@@ -101,7 +101,7 @@ GET_ARRAY_VALUE_h(value_float, float*);
 GET_ARRAY_VALUE_h(value_child_p, JsonItem**);
 
 // clang-format off
-#define JsonObj_new(in_json, out_json)                                                                       \
+#define JsonObj_new(in_json, out_json)                                                             \
     _Generic(in_json,                                                                              \
         const char*  : JsonObj_new_from_char_p,                                                    \
         String*      : JsonObj_new_from_string_p                                                   \
@@ -111,11 +111,11 @@ GET_ARRAY_VALUE_h(value_child_p, JsonItem**);
     _Generic ((json_stuff),                                                                        \
         JsonItem*: _Generic((out_p),                                                               \
             const char** : get_value_char_p,                                                       \
-            int* : get_value_int,                                                                  \
-            size_t* : get_value_uint,                                                              \
-            float* : get_value_float,                                                              \
-            JsonItem** : get_value_child_p,                                                        \
-            JsonArray** : get_value_array_p                                                        \
+            int*         : get_value_int,                                                          \
+            size_t*      : get_value_uint,                                                         \
+            float*       : get_value_float,                                                        \
+            JsonItem**   : get_value_child_p,                                                      \
+            JsonArray**  : get_value_array_p                                                       \
             ),                                                                                     \
         JsonArray*: _Generic((out_p),                                                              \
             const char** : get_array_value_char_p,                                                 \
@@ -126,10 +126,9 @@ GET_ARRAY_VALUE_h(value_child_p, JsonItem**);
             JsonArray**  : invalid_request                                                         \
             )                                                                                      \
         )(json_stuff, needle, out_p)
-
-
+// clang-format on
 #if TEST == 1
-    void test_class_json(void);
+void test_class_json(void);
 #endif
 
 #endif

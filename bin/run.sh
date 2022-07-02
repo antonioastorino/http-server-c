@@ -38,8 +38,10 @@ function analyze_mem() {
 pushd "${BD}"
 echo "Closing running instance"
 set +e
-/bin/rm -f assets/cookie*
-/bin/rm -f /tmp/pointers/*
+echo "${BD}/test/artifacts"
+/bin/rm -rf "${BD}/test/artifacts"
+/bin/rm -rf /tmp/pointers/*
+
 PID=$(pgrep ${APP_NAME})
 set -e
 if ! [ "${PID}" = "" ]; then
@@ -55,8 +57,6 @@ if ! [ -f "${MAKE_FILE}" ]; then
     ./bin/makeMakefile.sh
 fi
 
-mkdir -p /tmp/pointers
-
 echo "Running"
 if [ "${MODE}" = "TEST" ] || [ "${MODE}" = "DEBUG" ]; then
     # Set up dir entries for testing.
@@ -65,7 +65,6 @@ if [ "${MODE}" = "TEST" ] || [ "${MODE}" = "DEBUG" ]; then
         "${ARTIFACT_FOLDER}/non-empty/inner/inner_l2" \
         "${ARTIFACT_FOLDER}/non-empty-0/inner/inner_l2" \
         "${ARTIFACT_FOLDER}/empty-0" \
-        "${ARTIFACT_FOLDER}"/$(date "+%Y/%m/%d")
 
     touch "${ARTIFACT_FOLDER}/non-empty/inner/file.txt"
     touch "${ARTIFACT_FOLDER}/non-empty/inner/inner_l2/file.txt"
