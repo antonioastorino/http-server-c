@@ -86,17 +86,16 @@ pf "\n\t@mkdir -p \\"
 pf "\n\t${BUILD_DIR}"
 
 # Set TEST to 1 in case MODE==TEST and run unit tests
-pf "\n\tif [ \"\$(MODE)\" = \"TEST\" ]; then \\"
+pf "\n\t@if [ \"\$(MODE)\" = \"TEST\" ]; then \\"
 pf "\n\t[ \`grep -c '^#define TEST 0' \"\$(BD)\"/${COMMON_HEADER}\` -eq 1 ] && \\"
 pf "\n\tsed -i.bak 's/^#define TEST 0/#define TEST 1/g' \"\$(BD)\"/${COMMON_HEADER}; \\"
-pf "\n\tmake -C \"\$(BD)\" OPT=\$(OPT) ${BUILD_DIR}/${APP_NAME}; \\"
 pf "\n\telse \\"
 
 # Reset TEST in case as default behavior.
 pf "\n\t[ \`grep -c '^#define TEST 1' \"\$(BD)\"/${COMMON_HEADER}\` -eq 1 ] && \\"
 pf "\n\tsed -i.bak 's/^#define TEST 1/#define TEST 0/g' \"\$(BD)\"/${COMMON_HEADER}; \\"
-pf "\n\tmake -C \"\$(BD)\" OPT=\$(OPT) ${BUILD_DIR}/${APP_NAME}; \\"
-pf "\n\tfi"
+pf "\n\tfi; \\"
+pf "\n\tmake -C \"\$(BD)\" OPT=\$(OPT) ${BUILD_DIR}/${APP_NAME};"
 pf "\n"
 
 pf "\n${BUILD_DIR}/${APP_NAME}:"

@@ -2,3 +2,4 @@ build
 *.swp
 *.bak
 test/artifacts 
+Makefile

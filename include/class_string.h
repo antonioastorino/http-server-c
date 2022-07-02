@@ -1,7 +1,6 @@
 #ifndef MY_STRING_H
 #define MY_STRING_H
 #include "common.h"
-#include "string_array.h"
 #include <stdbool.h>
 #include <sys/types.h>
 

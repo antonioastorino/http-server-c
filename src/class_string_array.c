@@ -1,6 +1,4 @@
-#include "string_array.h"
-#include "common.h"
-#include "logger.h"
+#include "class_string_array.h"
 #include "my_memory.h"
 #include <stdlib.h>
 #include <string.h>
@@ -87,7 +85,7 @@ void StringArray_destroy(StringArray* string_array_p)
 }
 
 #if TEST == 1
-void test_string_array()
+void test_class_string_array()
 {
     StringArray test_string_array;
     PRINT_BANNER();

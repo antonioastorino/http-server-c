@@ -12,7 +12,7 @@ StringArray StringArray_new(const char*, const char*);
 void StringArray_destroy(StringArray*);
 
 #if TEST == 1
-void test_string_array();
+void test_class_string_array();
 #endif
 
 #endif
