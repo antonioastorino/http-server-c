@@ -687,7 +687,6 @@ void test_class_json()
         const char* value_str;
         size_t value_uint;
         JsonArray* json_array;
-        Error ret_res;
         String* json_string_p = load_file("test/assets/test_json_array_3.json");
         JsonObj_new(json_string_p, &json_obj_p);
         ASSERT(Json_get(json_obj_p->root_p, "Snapshot", &json_item) == ERR_ALL_GOOD, "Ok");
@@ -757,7 +756,6 @@ void test_class_json()
     PRINT_TEST_TITLE("Invalid JSON string - empty")
     {
         JsonObj* json_obj_p;
-        const char* value_str;
         String* json_string_p;
         json_string_p = String_new("");
         ASSERT(
