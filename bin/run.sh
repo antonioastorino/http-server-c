@@ -74,7 +74,7 @@ if [ "${MODE}" = "TEST" ] || [ "${MODE}" = "DEBUG" ]; then
     make MODE=TEST OPT=${OPT_LEVEL} 2>&1
     if [ "${MODE}" = "TEST" ]; then
         # Remove previous logs.
-        ./build/"${APP_NAME}-test-o${OPT_LEVEL}" 2>"${LOG_FILE_ERR}"
+        ./"${BUILD_DIR}/${APP_NAME}" 2>"${LOG_FILE_ERR}"
         RET_VAL=$?
         echo "================================================================================"
         if [ ${RET_VAL} -ne 0 ]; then
@@ -95,7 +95,7 @@ if [ "${MODE}" = "TEST" ] || [ "${MODE}" = "DEBUG" ]; then
         analyze_mem
         echo
     else
-        lldb ./build/"${APP_NAME}-test-o${OPT_LEVEL}"
+        lldb ./"${BUILD_DIR}/${APP_NAME} 8080"
     fi
 elif [ "${MODE}" = "BUILD" ]; then
     make OPT=${OPT_LEVEL} 2>&1

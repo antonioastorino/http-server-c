@@ -2,7 +2,7 @@
 #include "fs_utils.h"
 #include "logger.h"
 #include "my_memory.h"
-#include "my_string.h"
+#include "class_string.h"
 #include <errno.h>
 #include <fts.h>
 #include <stdio.h>
@@ -299,7 +299,7 @@ Error fs_utils_rm_r(const char* dir_path_char_p)
     return ret_res;
 }
 
-#if TEST == 1
+#if TEST == 2
 void test_fs_utils()
 {
     PRINT_BANNER();

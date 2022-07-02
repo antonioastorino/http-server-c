@@ -1,4 +1,5 @@
 #include "common.h"
+#include "http.h"
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <netdb.h>
@@ -9,8 +10,10 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include "http.h"
+#include "class_string.h"
 #define MAX_MSG_LEN 512
+
+#if TEST == 0
 int main(int argc, const char* argv[])
 {
     if (argc != 2)
@@ -154,3 +157,12 @@ int main(int argc, const char* argv[])
 
     return 0;
 }
+#elif TEST == 1
+int main()
+{
+    test_http();
+    test_class_string();
+}
+#else
+#error "TEST must be 0 or 1"
+#endif /* TEST == 0 */

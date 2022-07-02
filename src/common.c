@@ -1,5 +1,4 @@
 #include "common.h"
-#include <string.h>
 
 #define PRINT_PASS_MESSAGE(message) printf("> \x1B[32mPASS\x1B[0m\t %s\n", message)
 

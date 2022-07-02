@@ -13,7 +13,7 @@ setup:
 	@/bin/rm -rf tcp-server.app
 	@mkdir -p \
 	build
-	@if [ "$(MODE)" = "TEST" ]; then \
+	if [ "$(MODE)" = "TEST" ]; then \
 	[ `grep -c '^#define TEST 0' "$(BD)"/include/common.h` -eq 1 ] && \
 	sed -i.bak 's/^#define TEST 0/#define TEST 1/g' "$(BD)"/include/common.h; \
 	make -C "$(BD)" OPT=$(OPT) build/tcp-server.app; \
@@ -29,15 +29,17 @@ build/tcp-server.app:\
 	build/string_array.o \
 	build/my_memory.o \
 	build/logger.o \
-	build/my_string.o \
 	build/main.o \
 	build/error.o \
 	build/http.o \
 	build/fs_utils.o \
-	build/converter.o 
+	build/converter.o \
+	build/class_string.o 
 	clang $(LIB) $(FLAGS) -O$(OPT) $(INC) $(FRAMEWORKS) $^ -o $@
 
 build/json.o: src/json.c \
+	include/class_string.h \
+	build/class_string.o \
 	include/common.h \
 	build/common.o \
 	include/converter.h \
@@ -51,18 +53,22 @@ build/json.o: src/json.c \
 
 
 build/common.o: src/common.c \
-	include/common.h 
+	include/common.h \
+	include/error.h \
+	build/error.o \
+	include/logger.h \
+	build/logger.o 
 	clang $(INC) $(FLAGS) -O$(OPT) -c $< -o $@
 
 
 build/string_array.o: src/string_array.c \
-	include/string_array.h \
 	include/common.h \
 	build/common.o \
 	include/logger.h \
 	build/logger.o \
 	include/my_memory.h \
-	build/my_memory.o 
+	build/my_memory.o \
+	include/string_array.h 
 	clang $(INC) $(FLAGS) -O$(OPT) -c $< -o $@
 
 
@@ -74,24 +80,17 @@ build/my_memory.o: src/my_memory.c \
 
 
 build/logger.o: src/logger.c \
+	include/common.h \
+	build/common.o \
 	include/logger.h 
-	clang $(INC) $(FLAGS) -O$(OPT) -c $< -o $@
-
-
-build/my_string.o: src/my_string.c \
-	include/logger.h \
-	build/logger.o \
-	include/my_memory.h \
-	build/my_memory.o \
-	include/my_string.h 
 	clang $(INC) $(FLAGS) -O$(OPT) -c $< -o $@
 
 
 build/main.o: src/main.c \
 	include/common.h \
 	build/common.o \
-	include/http.h \
-	build/http.o 
+	include/logger.h \
+	build/logger.o 
 	clang $(INC) $(FLAGS) -O$(OPT) -c $< -o $@
 
 
@@ -101,20 +100,22 @@ build/error.o: src/error.c \
 
 
 build/http.o: src/http.c \
+	include/common.h \
+	build/common.o \
 	include/http.h 
 	clang $(INC) $(FLAGS) -O$(OPT) -c $< -o $@
 
 
 build/fs_utils.o: src/fs_utils.c \
+	include/class_string.h \
+	build/class_string.o \
 	include/common.h \
 	build/common.o \
 	include/fs_utils.h \
 	include/logger.h \
 	build/logger.o \
 	include/my_memory.h \
-	build/my_memory.o \
-	include/my_string.h \
-	build/my_string.o 
+	build/my_memory.o 
 	clang $(INC) $(FLAGS) -O$(OPT) -c $< -o $@
 
 
@@ -124,5 +125,16 @@ build/converter.o: src/converter.c \
 	include/converter.h \
 	include/logger.h \
 	build/logger.o 
+	clang $(INC) $(FLAGS) -O$(OPT) -c $< -o $@
+
+
+build/class_string.o: src/class_string.c \
+	include/class_string.h \
+	include/common.h \
+	build/common.o \
+	include/my_memory.h \
+	build/my_memory.o \
+	include/string_array.h \
+	build/string_array.o 
 	clang $(INC) $(FLAGS) -O$(OPT) -c $< -o $@
 

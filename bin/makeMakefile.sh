@@ -19,9 +19,9 @@ cat /dev/null >src-name.list   # filename no extension
 for EXTENSION in ${SRC_EXTENSIONS[@]}; do
     for f in $(find $SRC_PATHS -name "*.${EXTENSION}"); do
         FILE_NAME=$(basename $f)
-        echo "$f" >>src-full.list
         FILE_NO_EXT=${FILE_NAME%.*}
         echo "${FILE_NO_EXT}" >>src-name.list
+        echo "$f" >>src-full.list
     done
 done
 
@@ -86,7 +86,7 @@ pf "\n\t@mkdir -p \\"
 pf "\n\t${BUILD_DIR}"
 
 # Set TEST to 1 in case MODE==TEST and run unit tests
-pf "\n\t@if [ \"\$(MODE)\" = \"TEST\" ]; then \\"
+pf "\n\tif [ \"\$(MODE)\" = \"TEST\" ]; then \\"
 pf "\n\t[ \`grep -c '^#define TEST 0' \"\$(BD)\"/${COMMON_HEADER}\` -eq 1 ] && \\"
 pf "\n\tsed -i.bak 's/^#define TEST 0/#define TEST 1/g' \"\$(BD)\"/${COMMON_HEADER}; \\"
 pf "\n\tmake -C \"\$(BD)\" OPT=\$(OPT) ${BUILD_DIR}/${APP_NAME}; \\"
@@ -108,17 +108,33 @@ pf "\n\t${COMPILER} \$(LIB) \$(FLAGS) -O\$(OPT) \$(INC) \$(FRAMEWORKS) \$^ -o \$
 pf "\n"
 
 echo "Adding dependency list"
-while read -r FILE_FULL_PATH; do
-    FILE_NAME=$(basename "${FILE_FULL_PATH}")
-    DIR_NAME=$(dirname "${FILE_FULL_PATH}")
+while read -r SRC_FULL_PATH; do
+    FILE_NAME=$(basename "${SRC_FULL_PATH}")
+    DIR_NAME=$(dirname "${SRC_FULL_PATH}")
     FILE_NO_EXT=${FILE_NAME%.*}
     FILE_EXT=${FILE_NAME##*.}
+    if [ "${FILE_EXT}" = "c" ]; then
+        if ! [ "${FILE_NO_EXT}" = "${MAIN}" ]; then
+            CORR_HEADER=$(find ${BD} -name ${FILE_NO_EXT}.h)
+        else
+            CORR_HEADER=""
+        fi
+    else
+        echo "File extension ${FILE_EXT} not supported"
+    fi
 
-    pf "\n${BUILD_DIR}/${FILE_NO_EXT}.o: ${FILE_FULL_PATH} "
+    pf "\n${BUILD_DIR}/${FILE_NO_EXT}.o: ${SRC_FULL_PATH} "
 
-    HEADER_FILES=($(egrep "^#include|^#import" "${FILE_FULL_PATH}" | grep -v "<" | awk -F '"' '{print $2}'))
+    HEADER_FILES=($(egrep "^#include|^#import" "${SRC_FULL_PATH}" | grep -v "<" | awk -F '"' '{print $2}'))
+    if ! [ "${CORR_HEADER}" = "" ]; then
+        HEADER_FILES+=($(egrep "^#include|^#import" "${CORR_HEADER}" | grep -v "<" | awk -F '"' '{print $2}'))
+        UNIQUE_HEADER_FILES=($(for H in "${HEADER_FILES[@]}"; do echo "${H}"; done | sort -u))
+    fi
 
-    for HEADER_FILE in ${HEADER_FILES[@]}; do
+    echo "Adding as dependencies header files and corresponding source files found in"
+    echo " - ${SRC_FULL_PATH}"
+    echo " - "${CORR_HEADER#"${BD}/"}
+    for HEADER_FILE in ${UNIQUE_HEADER_FILES[@]}; do
         # Some headers are imported with the path
         HEADER_NAME=$(basename "${HEADER_FILE}")
         HEADER_PATH=$(find "${BD}" -name "${HEADER_NAME}")

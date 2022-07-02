@@ -1,8 +1,7 @@
 #ifndef LOGGER_H
 #define LOGGER_H
-
-//#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
-#define __FILENAME__ __FILE__
+#include "common.h"
+#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
 #define LEVEL_TRACE 5
 #define LEVEL_DEBUG 4
@@ -18,6 +17,10 @@
 
 // Ensure that errors are not printed to stderr during tests as they would cause the unit test to
 // fail.
+#ifndef TEST
+#error "Undefined TEST"
+#endif
+
 #if TEST == 1
 #define log_err stdout
 #else

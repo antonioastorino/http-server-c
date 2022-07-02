@@ -8,6 +8,7 @@ void test_http()
     PRINT_BANNER();
     PRINT_TEST_TITLE("Parsing verb");
     {
-        request_verb rqv = parse_verb("GET /");
+//        request_verb rqv = parse_verb("GET /");
     }
+}
 #endif /* TEST == 1 */

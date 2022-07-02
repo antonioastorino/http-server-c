@@ -1,8 +1,8 @@
 #ifndef FS_UTILS_H
 #define FS_UTILS_H
 
+#include "class_string.h"
 #include "common.h"
-#include "my_string.h"
 #include <sys/types.h>
 
 // Folders only.
@@ -11,7 +11,7 @@ Error fs_utils_mkdir_p(const char*, mode_t);
 Error fs_utils_rmdir(const char*);
 // Files only.
 Error fs_utils_rm_from_path_as_char_p(const char*);
-Error_fs_utils_read_to_string(const char*, String*);
+Error fs_utils_read_to_string(const char*, String*);
 Error fs_utils_append(const char*, const char*);
 Error fs_utils_create_with_content(const char*, const char*);
 // Files and folders.

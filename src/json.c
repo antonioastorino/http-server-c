@@ -523,7 +523,7 @@ GET_ARRAY_VALUE_c(value_uint, VALUE_UINT, size_t*);
 GET_ARRAY_VALUE_c(value_float, VALUE_FLOAT, float*);
 GET_ARRAY_VALUE_c(value_child_p, VALUE_ITEM, JsonItem**);
 
-#if TEST == 1
+#if TEST == 2
 
 String* load_file(char* filename)
 {

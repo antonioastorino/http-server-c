@@ -4,6 +4,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
+
+#define TEST 1
 
 #include "error.h"
 #include "logger.h"

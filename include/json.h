@@ -1,7 +1,7 @@
 #ifndef CLASS_JSON_H
 #define CLASS_JSON_H
 #include "common.h"
-#include "my_string.h"
+#include "class_string.h"
 #define CHECK_MISSING_ENTRY(entry, bool_value, success_string)                                     \
     if (IS_ERR(result))                                                                            \
     {                                                                                              \

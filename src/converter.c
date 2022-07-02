@@ -164,7 +164,7 @@ float rounder(float to_be_rounded, float step, size_t num_of_decimals)
     return quotient_float;
 }
 
-#if TEST == 1
+#if TEST == 2
 void test_converter()
 {
     PRINT_BANNER();
