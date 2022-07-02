@@ -2,7 +2,6 @@
 
 BD="$(pwd)/$(dirname $0)/.."
 source "${BD}/bin/variables.sh"
-if [ -z ${APP_NAME} ]; then exit 1; fi
 
 set -ue
 
@@ -12,7 +11,6 @@ bin/cleanup.sh
 function pf() { printf "$1" >>"$MAKE_FILE"; }
 
 pf "# Makefile auto generated using custom generator"
-# Find all the directories containing header files
 
 cat /dev/null >header-dir.list # dir only
 cat /dev/null >src-full.list   # full path
@@ -62,8 +60,7 @@ for LIB_FOUND in ${ALL_LIBS[@]}; do
     esac
 done
 
-pf "\nCFLAGS=${CFLAGS}"
-pf "\nMAINFLAGS=${MAINFLAGS}"
+pf "\nFLAGS=${FLAGS}"
 pf "\nBD=${BD}"
 pf "\nOPT ?= 0"
 
@@ -84,7 +81,7 @@ pf "\nall: setup"
 pf "\n"
 
 pf "\nsetup:"
-pf "\n\t@/bin/rm -rf ${APP_NAME}.app"
+pf "\n\t@/bin/rm -rf ${APP_NAME}"
 pf "\n\t@mkdir -p \\"
 pf "\n\t${BUILD_DIR}"
 
@@ -92,7 +89,7 @@ pf "\n\t${BUILD_DIR}"
 pf "\n\t@if [ \"\$(MODE)\" = \"TEST\" ]; then \\"
 pf "\n\t[ \`grep -c '^#define TEST 0' \"\$(BD)\"/${COMMON_HEADER}\` -eq 1 ] && \\"
 pf "\n\tsed -i.bak 's/^#define TEST 0/#define TEST 1/g' \"\$(BD)\"/${COMMON_HEADER}; \\"
-pf "\n\tmake -C \"\$(BD)\" OPT=\$(OPT) ${BUILD_DIR}/${APP_NAME}-test; \\"
+pf "\n\tmake -C \"\$(BD)\" OPT=\$(OPT) ${BUILD_DIR}/${APP_NAME}; \\"
 pf "\n\telse \\"
 
 # Reset TEST in case as default behavior.
@@ -107,7 +104,7 @@ while read -r FILE_NAME; do
     pf "\\"
     pf "\n\t${BUILD_DIR}/${FILE_NAME}.o "
 done <src-name.list
-pf "\n\t${GLOBAL_COMPILER} \$(LIB) \$(MAINFLAGS) -O\$(OPT) \$(INC) \$(FRAMEWORKS) \$^ -o \$@"
+pf "\n\t${COMPILER} \$(LIB) \$(FLAGS) -O\$(OPT) \$(INC) \$(FRAMEWORKS) \$^ -o \$@"
 pf "\n"
 
 echo "Adding dependency list"
@@ -135,11 +132,7 @@ while read -r FILE_FULL_PATH; do
         fi
     done
 
-    case $FILE_EXT in
-    c)
-        pf "\n\tgcc \$(INC) \$(CFLAGS) -O\$(OPT) -c \$< -o \$@\n"
-        ;;
-    esac
+    pf "\n\t${COMPILER} \$(INC) \$(FLAGS) -O\$(OPT) -c \$< -o \$@\n"
     pf "\n"
 done <src-full.list
 

@@ -9,7 +9,8 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-
+#include "http.h"
+#define MAX_MSG_LEN 512
 int main(int argc, const char* argv[])
 {
     if (argc != 2)
@@ -81,14 +82,10 @@ int main(int argc, const char* argv[])
             memset(&out_buff, 0, 512);
             bytes_recv = read(client_socket, &in_buff, MAX_MSG_LEN);
 
-//            if (bytes_recv == 0)
-//            {
-//                printf("Connection closed by the client\n");
-//                return 0;
-//            }
             if (bytes_recv == -1)
             {
                 printf("Socket error\n");
+                close(client_socket);
                 return -1;
             }
             printf("Client socket: %d - bytes %d\n", client_socket, bytes_recv);
@@ -142,7 +139,7 @@ int main(int argc, const char* argv[])
                 fclose(index_html);
             }
             close(client_socket);
-            printf("Closing socket Nr. %d\n", client_socket);
+            printf("[CHILD] Closing socket Nr. %d\n", client_socket);
             shutdown(client_socket, SHUT_RDWR);
 
             return 0;
@@ -150,7 +147,7 @@ int main(int argc, const char* argv[])
         else
         {
             // Parent process
-            printf("Connection to socket nr. %d accepted.\n", client_socket);
+            printf("[PARENT] Connection to socket nr. %d accepted.\n", client_socket);
             close(client_socket);
         }
     }
