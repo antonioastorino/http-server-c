@@ -33,4 +33,7 @@ typedef enum Error
             return _res;                                                                           \
         }                                                                                          \
     }
+
+#define is_err(_expr) (_expr != ERR_ALL_GOOD)
+
 #endif /* ERROR_H */

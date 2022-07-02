@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include "class_string.h"
+#include "class_json.h"
 #define MAX_MSG_LEN 512
 
 #if TEST == 0
@@ -162,6 +163,7 @@ int main()
 {
     test_http();
     test_class_string();
+    test_class_json();
 }
 #else
 #error "TEST must be 0 or 1"

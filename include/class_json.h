@@ -1,20 +1,7 @@
 #ifndef CLASS_JSON_H
 #define CLASS_JSON_H
-#include "common.h"
 #include "class_string.h"
-#define CHECK_MISSING_ENTRY(entry, bool_value, success_string)                                     \
-    if (IS_ERR(result))                                                                            \
-    {                                                                                              \
-        LOG_ON_ERR(result, success_string);                                                        \
-        bool_value = true;                                                                         \
-    }
-
-#define SET_MISSING_ENTRY(result, bool_value, success_string)                                      \
-    if (IS_ERR(result))                                                                            \
-    {                                                                                              \
-        LOG_ON_ERR(result, success_string);                                                        \
-        bool_value = true;                                                                         \
-    }
+#include "common.h"
 
 // A air `key` `value`, plus a `parent` to make a double-linked list, and a `sibling`.
 typedef struct JsonItem JsonItem;
@@ -87,8 +74,8 @@ typedef struct JsonObj
     JsonItem* root_p;
 } JsonObj;
 
-Error JsonObj_new_from_string_p(const String*, JsonObj*);
-Error JsonObj_new_from_char_p(const char*, JsonObj*);
+Error JsonObj_new_from_string_p(const String*, JsonObj**);
+Error JsonObj_new_from_char_p(const char*, JsonObj**);
 void JsonObj_destroy(JsonObj*);
 void JsonObj_get_tokens(String*);
 
@@ -144,4 +131,5 @@ GET_ARRAY_VALUE_h(value_child_p, JsonItem**);
 #if TEST == 1
     void test_class_json(void);
 #endif
+
 #endif

@@ -24,11 +24,11 @@ setup:
 	fi
 
 build/tcp-server.app:\
-	build/json.o \
 	build/common.o \
 	build/string_array.o \
 	build/my_memory.o \
 	build/logger.o \
+	build/class_json.o \
 	build/main.o \
 	build/error.o \
 	build/http.o \
@@ -36,21 +36,6 @@ build/tcp-server.app:\
 	build/converter.o \
 	build/class_string.o 
 	clang $(LIB) $(FLAGS) -O$(OPT) $(INC) $(FRAMEWORKS) $^ -o $@
-
-build/json.o: src/json.c \
-	include/class_string.h \
-	build/class_string.o \
-	include/common.h \
-	build/common.o \
-	include/converter.h \
-	build/converter.o \
-	include/json.h \
-	include/logger.h \
-	build/logger.o \
-	include/my_memory.h \
-	build/my_memory.o 
-	clang $(INC) $(FLAGS) -O$(OPT) -c $< -o $@
-
 
 build/common.o: src/common.c \
 	include/common.h \
@@ -86,11 +71,30 @@ build/logger.o: src/logger.c \
 	clang $(INC) $(FLAGS) -O$(OPT) -c $< -o $@
 
 
-build/main.o: src/main.c \
+build/class_json.o: src/class_json.c \
+	include/class_json.h \
+	include/class_string.h \
+	build/class_string.o \
 	include/common.h \
 	build/common.o \
-	include/logger.h \
-	build/logger.o 
+	include/converter.h \
+	build/converter.o \
+	include/my_memory.h \
+	build/my_memory.o 
+	clang $(INC) $(FLAGS) -O$(OPT) -c $< -o $@
+
+
+build/main.o: src/main.c \
+	include/class_json.h \
+	build/class_json.o \
+	include/class_string.h \
+	build/class_string.o \
+	include/common.h \
+	build/common.o \
+	include/converter.h \
+	build/converter.o \
+	include/my_memory.h \
+	build/my_memory.o 
 	clang $(INC) $(FLAGS) -O$(OPT) -c $< -o $@
 
 
