@@ -538,7 +538,6 @@ void test_class_string()
         const char* char_array[] = {NULL};
         String test_string    = String_join(char_array, "hello");
         ASSERT(test_string.str == NULL, "No string created");
-        String_destroy(&test_string);
     }
 
     PRINT_TEST_TITLE("Join with 1 element");
@@ -546,6 +545,7 @@ void test_class_string()
         const char* one_element_array[] = {"element 1", NULL};
         String test_string           = String_join(one_element_array, "hello");
         ASSERT_EQ(test_string.str, "element 1", "No concatenation performed");
+        String_destroy(&test_string);
     }
 
     PRINT_TEST_TITLE("Join with 2 elements");

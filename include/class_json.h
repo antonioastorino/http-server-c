@@ -19,6 +19,7 @@ typedef enum
     VALUE_ITEM,
     VALUE_INVALID,
 } ValueType;
+ 
 /**
  *
  * JSON operators (if found outside a string):
@@ -74,8 +75,8 @@ typedef struct JsonObj
     JsonItem* root_p;
 } JsonObj;
 
-Error JsonObj_new_from_string_p(const String*, JsonObj**);
-Error JsonObj_new_from_char_p(const char*, JsonObj**);
+Error JsonObj_new_from_string_p(const String*, JsonObj*);
+Error JsonObj_new_from_char_p(const char*, JsonObj*);
 void JsonObj_destroy(JsonObj*);
 void JsonObj_get_tokens(String*);
 
