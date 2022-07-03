@@ -129,26 +129,24 @@ void deserialize(JsonItem* curr_item_p, char** start_pos_p)
         if (curr_pos_p[0] == '[')
         {
             LOG_TRACE("Found beginning of array.");
-            JsonItem* new_item                = (JsonItem*)MALLOC(sizeof(JsonItem));
-            new_item->value                   = (JsonValue*)MALLOC(sizeof(JsonValue));
-            new_item->index                   = 0;
-            new_item->key_p                   = NULL;
-            new_item->parent                  = curr_item_p;
-            new_item->next_sibling            = NULL;
-            curr_item_p->value->value_type    = VALUE_ARRAY;
-            curr_item_p->value->value_child_p = new_item;
+            JsonItem* new_item               = (JsonItem*)MALLOC(sizeof(JsonItem));
+            new_item->index                  = 0;
+            new_item->key_p                  = NULL;
+            new_item->parent                 = curr_item_p;
+            new_item->next_sibling           = NULL;
+            curr_item_p->value.value_type    = VALUE_ARRAY;
+            curr_item_p->value.value_child_p = new_item;
             curr_pos_p++;
 
             curr_item_p = new_item;
             continue;
         }
 
-        if ((curr_item_p->parent->value->value_type == VALUE_ARRAY) && (*curr_pos_p == ','))
+        if ((curr_item_p->parent->value.value_type == VALUE_ARRAY) && (*curr_pos_p == ','))
         {
             // This is a sibling of an array.
             LOG_TRACE("Found sibling in array.");
             JsonItem* new_item        = (JsonItem*)MALLOC(sizeof(JsonItem));
-            new_item->value           = (JsonValue*)MALLOC(sizeof(JsonValue));
             new_item->index           = curr_item_p->index + 1;
             new_item->key_p           = NULL;
             new_item->parent          = curr_item_p->parent;
@@ -190,9 +188,9 @@ void deserialize(JsonItem* curr_item_p, char** start_pos_p)
                 float parsed_float = 0.0f;
                 if (str_to_float(num_buff, &parsed_float) == ERR_ALL_GOOD)
                 {
-                    curr_item_p->value->value_type  = VALUE_FLOAT;
-                    curr_item_p->value->value_float = parsed_float;
-                    LOG_TRACE("Found value %f", curr_item_p->value->value_float);
+                    curr_item_p->value.value_type  = VALUE_FLOAT;
+                    curr_item_p->value.value_float = parsed_float;
+                    LOG_TRACE("Found value %f", curr_item_p->value.value_float);
                 }
             }
             else if (num_buff[0] == '-')
@@ -200,9 +198,9 @@ void deserialize(JsonItem* curr_item_p, char** start_pos_p)
                 int parsed_int = 0;
                 if (str_to_int(num_buff, &parsed_int) == ERR_ALL_GOOD)
                 {
-                    curr_item_p->value->value_type = VALUE_INT;
-                    curr_item_p->value->value_int  = parsed_int;
-                    LOG_TRACE("Found value %d", curr_item_p->value->value_int);
+                    curr_item_p->value.value_type = VALUE_INT;
+                    curr_item_p->value.value_int  = parsed_int;
+                    LOG_TRACE("Found value %d", curr_item_p->value.value_int);
                 }
             }
             else
@@ -211,19 +209,19 @@ void deserialize(JsonItem* curr_item_p, char** start_pos_p)
                 size_t parsed_size_t = 0;
                 if (str_to_size_t(num_buff, &parsed_size_t) == ERR_ALL_GOOD)
                 {
-                    curr_item_p->value->value_type = VALUE_UINT;
-                    curr_item_p->value->value_uint = parsed_size_t;
-                    LOG_TRACE("Found value %lu", curr_item_p->value->value_uint);
+                    curr_item_p->value.value_type = VALUE_UINT;
+                    curr_item_p->value.value_uint = parsed_size_t;
+                    LOG_TRACE("Found value %lu", curr_item_p->value.value_uint);
                 }
             }
             break;
         }
         case STRING:
         {
-            curr_item_p->value->value_type   = VALUE_STR;
-            curr_item_p->value->value_char_p = curr_pos_p + 1; // Point after the quote
-            curr_pos_p                       = terminate_str(curr_pos_p);
-            LOG_TRACE("Found value \"%s\"", curr_item_p->value->value_char_p);
+            curr_item_p->value.value_type   = VALUE_STR;
+            curr_item_p->value.value_char_p = curr_pos_p + 1; // Point after the quote
+            curr_pos_p                      = terminate_str(curr_pos_p);
+            LOG_TRACE("Found value \"%s\"", curr_item_p->value.value_char_p);
             break;
         }
         case KEY:
@@ -234,13 +232,12 @@ void deserialize(JsonItem* curr_item_p, char** start_pos_p)
                 {
                     // It's a child
                     LOG_TRACE("Found new object");
-                    JsonItem* new_item                = (JsonItem*)MALLOC(sizeof(JsonItem));
-                    new_item->value                   = (JsonValue*)MALLOC(sizeof(JsonValue));
-                    new_item->next_sibling            = NULL;
-                    new_item->parent                  = curr_item_p;
-                    curr_item_p->value->value_type    = VALUE_ITEM;
-                    curr_item_p->value->value_child_p = new_item;
-                    curr_item_p                       = new_item;
+                    JsonItem* new_item               = (JsonItem*)MALLOC(sizeof(JsonItem));
+                    new_item->next_sibling           = NULL;
+                    new_item->parent                 = curr_item_p;
+                    curr_item_p->value.value_type    = VALUE_ITEM;
+                    curr_item_p->value.value_child_p = new_item;
+                    curr_item_p                      = new_item;
                 }
                 else
                 {
@@ -251,7 +248,6 @@ void deserialize(JsonItem* curr_item_p, char** start_pos_p)
             {
                 // It's a sibling - the parent must be in common.
                 JsonItem* new_item        = (JsonItem*)MALLOC(sizeof(JsonItem));
-                new_item->value           = (JsonValue*)MALLOC(sizeof(JsonValue));
                 new_item->next_sibling    = NULL;
                 curr_item_p->next_sibling = new_item;
                 new_item->parent          = curr_item_p->parent;
@@ -306,14 +302,14 @@ Error JsonObj_new_from_string_p(const String* json_string_p, JsonObj* out_json_o
         LOG_ERROR("Invalid JSON string.");
         return ERR_JSON_INVALID;
     }
-    out_json_obj_p->json_string = trimmed_json_string;
+    out_json_obj_p->json_string   = trimmed_json_string;
 
-    char* curr_pos_p            = out_json_obj_p->json_string.str; // position analyzed (iterator)
-    JsonItem* curr_item_p       = (JsonItem*)MALLOC(sizeof(JsonItem));
-    curr_item_p->value          = (JsonValue*)MALLOC(sizeof(JsonValue));
-    curr_item_p->parent         = curr_item_p; // Set the parent to itself to recognize 'root'.
-    curr_item_p->next_sibling   = NULL;
-    out_json_obj_p->root_p      = curr_item_p;
+    char* curr_pos_p              = out_json_obj_p->json_string.str; // position analyzed (iterator)
+    JsonItem* curr_item_p         = (JsonItem*)MALLOC(sizeof(JsonItem));
+    curr_item_p->value.value_type = VALUE_UNDEFINED;
+    curr_item_p->parent           = curr_item_p; // Set the parent to itself to recognize 'root'.
+    curr_item_p->next_sibling     = NULL;
+    out_json_obj_p->root_p        = curr_item_p;
 
     LOG_DEBUG("JSON deserialization started.");
     deserialize(curr_item_p, &curr_pos_p);
@@ -328,23 +324,22 @@ void JsonItem_destroy(JsonItem* json_item)
     {
         return;
     }
-    if (json_item->value)
+    if (json_item->value.value_type != VALUE_UNDEFINED)
     {
-        if (json_item->value->value_type == VALUE_ITEM)
+        if (json_item->value.value_type == VALUE_ITEM)
         {
-            JsonItem_destroy(json_item->value->value_child_p);
+            JsonItem_destroy(json_item->value.value_child_p);
         }
-        if (json_item->value->value_type == VALUE_ARRAY)
+        if (json_item->value.value_type == VALUE_ARRAY)
         {
-            JsonItem_destroy(json_item->value->value_child_p);
+            JsonItem_destroy(json_item->value.value_child_p);
         }
     }
     if (json_item->next_sibling != NULL)
     {
         JsonItem_destroy(json_item->next_sibling);
     }
-    FREE(json_item->value);
-    json_item->value = NULL;
+    json_item->value.value_type = VALUE_UNDEFINED;
     FREE(json_item);
     json_item = NULL;
 }
@@ -374,9 +369,9 @@ void JsonObj_destroy(JsonObj* json_obj_p)
         }                                                                                          \
         if (!strcmp(item->key_p, key))                                                             \
         {                                                                                          \
-            if (item->value->value_type == value_token)                                            \
+            if (item->value.value_type == value_token)                                             \
             {                                                                                      \
-                *out_value = item->value->suffix;                                                  \
+                *out_value = item->value.suffix;                                                   \
                 ACTION;                                                                            \
                 return ERR_ALL_GOOD;                                                               \
             }                                                                                      \
@@ -402,50 +397,50 @@ void JsonObj_destroy(JsonObj* json_obj_p)
         }                                                                                          \
         if (!strcmp(item->key_p, key))                                                             \
         {                                                                                          \
-            if (item->value->value_type == value_token)                                            \
+            if (item->value.value_type == value_token)                                             \
             {                                                                                      \
-                *out_value = item->value->suffix;                                                  \
+                *out_value = item->value.suffix;                                                   \
                 ACTION;                                                                            \
                 return ERR_ALL_GOOD;                                                               \
             }                                                                                      \
-            else if ((item->value->value_type == VALUE_INT) && (value_token == VALUE_FLOAT))       \
+            else if ((item->value.value_type == VALUE_INT) && (value_token == VALUE_FLOAT))        \
             {                                                                                      \
                 LOG_WARNING("Converting int to float");                                            \
-                *out_value = (float)(1.0f * item->value->value_int);                               \
+                *out_value = (float)(1.0f * item->value.value_int);                                \
                 ACTION;                                                                            \
                 return ERR_ALL_GOOD;                                                               \
             }                                                                                      \
-            else if ((item->value->value_type == VALUE_UINT) && (value_token == VALUE_FLOAT))      \
+            else if ((item->value.value_type == VALUE_UINT) && (value_token == VALUE_FLOAT))       \
             {                                                                                      \
                 LOG_WARNING("Converting size_t to float");                                         \
-                *out_value = (float)(1.0f * item->value->value_uint);                              \
+                *out_value = (float)(1.0f * item->value.value_uint);                               \
                 ACTION;                                                                            \
                 return ERR_ALL_GOOD;                                                               \
             }                                                                                      \
-            else if ((item->value->value_type == VALUE_INT) && (value_token == VALUE_UINT))        \
+            else if ((item->value.value_type == VALUE_INT) && (value_token == VALUE_UINT))         \
             {                                                                                      \
                 LOG_WARNING("Converting int to size_t");                                           \
-                if (item->value->value_int < 0)                                                    \
+                if (item->value.value_int < 0)                                                     \
                 {                                                                                  \
                     LOG_ERROR(                                                                     \
                         "Impossible to convert negative int %d into size_t",                       \
-                        item->value->value_int);                                                   \
+                        item->value.value_int);                                                    \
                     LOG_ERROR("Failed to convert from INT to SIZE_T");                             \
                     return ERR_INVALID;                                                            \
                 };                                                                                 \
-                *out_value = (size_t)item->value->value_int;                                       \
+                *out_value = (size_t)item->value.value_int;                                        \
                 ACTION;                                                                            \
                 return ERR_ALL_GOOD;                                                               \
             }                                                                                      \
-            else if ((item->value->value_type == VALUE_UINT) && (value_token == VALUE_INT))        \
+            else if ((item->value.value_type == VALUE_UINT) && (value_token == VALUE_INT))         \
             {                                                                                      \
                 LOG_WARNING("Converting size_t to int");                                           \
-                *out_value = (int)item->value->value_uint;                                         \
+                *out_value = (int)item->value.value_uint;                                          \
                 /* check for overflow */                                                           \
-                if ((size_t)*out_value != item->value->value_uint)                                 \
+                if ((size_t)*out_value != item->value.value_uint)                                  \
                 {                                                                                  \
                     LOG_ERROR(                                                                     \
-                        "Overflow while converting %lu into an int", item->value->value_uint);     \
+                        "Overflow while converting %lu into an int", item->value.value_uint);      \
                     return ERR_INVALID;                                                            \
                 };                                                                                 \
                 ACTION;                                                                            \
@@ -485,15 +480,15 @@ void JsonObj_destroy(JsonObj* json_obj_p)
             }                                                                                      \
             json_item = json_item->next_sibling;                                                   \
         }                                                                                          \
-        if (json_item->value->value_type != value_token)                                           \
+        if (json_item->value.value_type != value_token)                                            \
         {                                                                                          \
             LOG_ERROR(                                                                             \
                 "Incompatible data type - found %d, requested %d",                                 \
-                json_item->value->value_type,                                                      \
+                json_item->value.value_type,                                                       \
                 value_token);                                                                      \
             return ERR_TYPE_MISMATCH;                                                              \
         }                                                                                          \
-        *out_value = json_item->value->suffix;                                                     \
+        *out_value = json_item->value.suffix;                                                      \
         return ERR_ALL_GOOD;                                                                       \
     }
 
@@ -503,7 +498,7 @@ GET_VALUE_c(
     value_array_p,
     VALUE_ARRAY,
     JsonArray**,
-    (*out_value)->element = item->value->value_child_p);
+    (*out_value)->element = item->value.value_child_p);
 
 GET_NUMBER_c(value_int, VALUE_INT, int*, );
 GET_NUMBER_c(value_uint, VALUE_UINT, size_t*, );
@@ -611,7 +606,7 @@ void test_class_json()
         Json_get(json_obj.root_p, "key", &json_array);
         Json_get(json_array, 0, &json_item);
         ASSERT_EQ(json_item->key_p, "array key", "Array STRING element retrieved.");
-        printf("%d\n", json_item->value->value_type);
+        printf("%d\n", json_item->value.value_type);
         Json_get(json_item, "array key", &value_uint);
         ASSERT_EQ(value_uint, 56, "Value found an item that is also array element.");
         JsonObj_destroy(&json_obj);

@@ -64,7 +64,7 @@ typedef struct JsonItem
 {
     const char* key_p;
     size_t index; // For arrays only
-    JsonValue* value;
+    JsonValue value;
     struct JsonItem* parent;
     struct JsonItem* next_sibling;
 } JsonItem;
