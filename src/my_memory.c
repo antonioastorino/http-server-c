@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <sys/errno.h>
 
-#if MEM_ANALYSIS == 1
+#if TEST == 1
 
 void create_file(void* pointer, const char* file, const int line)
 {

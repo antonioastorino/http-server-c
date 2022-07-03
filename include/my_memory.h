@@ -5,7 +5,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
-#if MEM_ANALYSIS == 1
+#if TEST == 1
     void* custom_malloc(size_t, const char*, const int);
     void* custom_reallocf(void*, size_t, const char*, const int);
     int custom_vasprintf(char**, const char*, va_list, const char*, const int);

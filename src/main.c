@@ -165,11 +165,11 @@ int main(int argc, const char* argv[])
 int main()
 {
     test_http();
-    test_class_string();
-    test_class_string_array();
-    test_class_json();
-    test_converter();
-    test_fs_utils();
+    //    test_class_string();
+    //    test_class_string_array();
+    //    test_class_json();
+    //    test_converter();
+    //    test_fs_utils();
 }
 #else
 #error "TEST must be 0 or 1"
