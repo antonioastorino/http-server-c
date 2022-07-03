@@ -17,8 +17,8 @@ StringArray StringArray_new(const char* input_char_p, const char* pattern_char_p
     size_t cnt         = 0;
     int pattern_length = strlen(pattern_char_p);
 
-    // Counting the number of times old word occur in the string
-    const char* s = input_char_p;
+    // Counting the number of times patter occurs in the string
+    const char* s      = input_char_p;
     for (i = 0; i < origin_size; i++)
     {
         if (strstr(&s[i], pattern_char_p) == &s[i])
@@ -29,6 +29,7 @@ StringArray StringArray_new(const char* input_char_p, const char* pattern_char_p
             i += pattern_length - 1;
         }
     }
+    LOG_TRACE("Found %lu occurrencies of the pattern `%s`", cnt, pattern_char_p);
 
     // Making new string of enough length
     size_t new_string_length         = i + cnt * (1 - pattern_length);
@@ -38,12 +39,12 @@ StringArray StringArray_new(const char* input_char_p, const char* pattern_char_p
     pointers[0] always points to the beginning of the string. The others point to the next split.
     pointers[last] points to NULL;
     */
-    char** pointers   = (char**)MALLOC(sizeof(char*) * (cnt + 2));
-    pointers[0]       = result_char_p;
-    pointers[cnt + 1] = NULL;
+    char** pointers                  = (char**)MALLOC(sizeof(char*) * (cnt + 2));
+    pointers[0]                      = result_char_p;
+    pointers[cnt + 1]                = NULL;
 
-    i              = 0;
-    size_t counter = 0;
+    i                                = 0;
+    size_t counter                   = 0;
     while (*s)
     {
         // compare the substring with the result
@@ -61,7 +62,7 @@ StringArray StringArray_new(const char* input_char_p, const char* pattern_char_p
 
     ret_string_array.str_char_p       = result_char_p;
     ret_string_array.str_array_char_p = pointers;
-    ret_string_array.num_of_elements    = cnt + 1;
+    ret_string_array.num_of_elements  = cnt + 1;
 
     return ret_string_array;
 }
