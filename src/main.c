@@ -99,59 +99,9 @@ int main(int argc, const char* argv[])
             //            printf("%s\n", in_buff);
             HttpReqObj req_obj;
             Error ret_res = HttpReqObj_new(in_buff, &req_obj);
-            switch (req_obj.req_header.req_method)
+            if (ret_res == ERR_ALL_GOOD)
             {
-            case METHOD_GET:
-                if (strncmp(req_obj.req_header.req_path, "/favicon.ico", 12) == 0)
-                {
-                    printf("Sending icon\n");
-                    off_t len     = 0; // set to 0 will send all the origin file
-                    int icon_file = open("assets/favicon.ico", O_RDONLY);
-                    if (icon_file == -1)
-                    {
-                        printf("Error opening icon file\n");
-                        return -1;
-                    }
-                    int res = sendfile(icon_file, client_socket, 0, &len, NULL, 0);
-                    if (res == -1)
-                    {
-                        perror("Failed to send file");
-                        return -1;
-                    }
-                    printf("Bytes sent: %lld\n", len);
-                    close(icon_file);
-                }
-                else
-                {
-                    FILE* index_html = fopen("assets/index.html", "r");
-                    if (index_html == NULL)
-                    {
-                        printf("Not good!\n");
-                        return -1;
-                    }
-                    fseek(index_html, 0L, SEEK_END);
-                    int sz = ftell(index_html);
-                    rewind(index_html);
-
-                    sprintf(
-                        out_buff,
-                        "HTTP/1.0 200 OK\r\nContent-Type: text/html; "
-                        "charset=UTF-8\r\nContent-Length: "
-                        "%d\r\n\r\n",
-                        sz);
-                    char c;
-                    write(client_socket, (char*)out_buff, strlen((char*)out_buff));
-                    //                fprintf(stdout, (char*)out_buff, strlen((char*)out_buff));
-                    while ((c = getc(index_html)) != EOF)
-                    {
-                        write(client_socket, (char*)&c, 1);
-                        //                    printf("%c", c);
-                    }
-                    fclose(index_html);
-                    break;
-                }
-            default:
-                break;
+                ret_res = HttpReqObj_handle(&req_obj, client_socket);
             }
 
             HttpReqObj_destroy(&req_obj);

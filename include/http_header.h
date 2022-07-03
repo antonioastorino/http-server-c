@@ -20,9 +20,9 @@ typedef enum
 
 typedef struct
 {
-    HttpMethod req_method;
-    char req_path[MAX_PATH_LENGTH];
-    HttpProtocol req_protocol;
+    HttpMethod method;
+    char location[MAX_PATH_LENGTH];
+    HttpProtocol protocol;
 } HttpReqHeader;
 
 Error http_header_init(const char*, HttpReqHeader*);

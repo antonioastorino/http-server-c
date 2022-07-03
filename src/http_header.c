@@ -37,9 +37,9 @@ HttpProtocol http_parse_protocol(const char* input_protocol_char_p)
 Error http_header_init(const char* header_str_p, HttpReqHeader* out_http_header)
 {
     Error ret_res                 = ERR_ALL_GOOD;
-    out_http_header->req_method   = METHOD_UNKNOWN;
-    out_http_header->req_protocol = PROTOCOL_UNKNOWN;
-    memset(out_http_header->req_path, 0, MAX_PATH_LENGTH);
+    out_http_header->method   = METHOD_UNKNOWN;
+    out_http_header->protocol = PROTOCOL_UNKNOWN;
+    memset(out_http_header->location, 0, MAX_PATH_LENGTH);
     // Split the header into lines.
     StringArray header_lines_string_array_obj = StringArray_new(header_str_p, "\r\n");
     LOG_INFO("Elements in the array: `%lu`", header_lines_string_array_obj.num_of_elements);
@@ -47,7 +47,7 @@ Error http_header_init(const char* header_str_p, HttpReqHeader* out_http_header)
     {
         LOG_ERROR("Invalid header");
         StringArray_destroy(&header_lines_string_array_obj);
-        out_http_header->req_method = METHOD_UNKNOWN;
+        out_http_header->method = METHOD_UNKNOWN;
         return ERR_INVALID;
     }
     // Split the first line into its component.
@@ -68,10 +68,10 @@ Error http_header_init(const char* header_str_p, HttpReqHeader* out_http_header)
     case 2:
     case 3:
         // try to parse method and path
-        out_http_header->req_method
+        out_http_header->method
             = http_parse_method(method_path_protocol_string_array_obj.str_array_char_p[0]);
 
-        if (out_http_header->req_method == METHOD_UNKNOWN)
+        if (out_http_header->method == METHOD_UNKNOWN)
         {
             LOG_ERROR("Invalid method detected");
             ret_res = ERR_INVALID;
@@ -79,17 +79,17 @@ Error http_header_init(const char* header_str_p, HttpReqHeader* out_http_header)
         }
         if (http_parse_path(
                 method_path_protocol_string_array_obj.str_array_char_p[1],
-                out_http_header->req_path)
+                out_http_header->location)
             != ERR_ALL_GOOD)
         {
             ret_res = ERR_INVALID;
             break;
         }
-        LOG_TRACE("Path: `%s`", out_http_header->req_path);
+        LOG_TRACE("Path: `%s`", out_http_header->location);
         // try to parse protocol as well
         if (method_path_protocol_string_array_obj.num_of_elements == 3)
         {
-            out_http_header->req_protocol
+            out_http_header->protocol
                 = http_parse_protocol(method_path_protocol_string_array_obj.str_array_char_p[2]);
         }
         break;
@@ -136,19 +136,19 @@ void test_http_header()
         HttpReqHeader http_req_header_obj;
         Error ret_res = http_header_init("GET /requested/path HTTP/1.1\r\n", &http_req_header_obj);
         ASSERT(ret_res == ERR_ALL_GOOD, "Initialization successful.");
-        ASSERT(http_req_header_obj.req_method == METHOD_GET, "Method found.");
-        ASSERT(strcmp(http_req_header_obj.req_path, "/requested/path") == 0, "Path saved.");
-        ASSERT(http_req_header_obj.req_protocol == PROTOCOL_VALID, "Protocol saved.");
+        ASSERT(http_req_header_obj.method == METHOD_GET, "Method found.");
+        ASSERT(strcmp(http_req_header_obj.location, "/requested/path") == 0, "Path saved.");
+        ASSERT(http_req_header_obj.protocol == PROTOCOL_VALID, "Protocol saved.");
     }
     PRINT_TEST_TITLE("Populate header - no protocol");
     {
         HttpReqHeader http_req_header_obj;
         Error ret_res = http_header_init("GET /requested/path\r\n", &http_req_header_obj);
         ASSERT(ret_res == ERR_ALL_GOOD, "Initialization successful.");
-        ASSERT(http_req_header_obj.req_method == METHOD_GET, "Method found.");
-        printf("Path: %d\n", strcmp(http_req_header_obj.req_path, "/requested/path"));
-        ASSERT(strcmp(http_req_header_obj.req_path, "/requested/path") == 0, "Path saved.");
-        ASSERT(http_req_header_obj.req_protocol == PROTOCOL_UNKNOWN, "Protocol not found.");
+        ASSERT(http_req_header_obj.method == METHOD_GET, "Method found.");
+        printf("Path: %d\n", strcmp(http_req_header_obj.location, "/requested/path"));
+        ASSERT(strcmp(http_req_header_obj.location, "/requested/path") == 0, "Path saved.");
+        ASSERT(http_req_header_obj.protocol == PROTOCOL_UNKNOWN, "Protocol not found.");
     }
     /*
      */
@@ -156,15 +156,15 @@ void test_http_header()
     {
         HttpReqHeader http_req_header_obj;
         ASSERT(http_header_init("GET\r\n", &http_req_header_obj) == ERR_INVALID, "Missing path.");
-        ASSERT(http_req_header_obj.req_method == METHOD_UNKNOWN, "Unknown method set.");
-        ASSERT(strcmp(http_req_header_obj.req_path, "\0") == 0, "Path not set.");
-        ASSERT(http_req_header_obj.req_protocol == PROTOCOL_UNKNOWN, "Protocol set to UNKNOWN.");
+        ASSERT(http_req_header_obj.method == METHOD_UNKNOWN, "Unknown method set.");
+        ASSERT(strcmp(http_req_header_obj.location, "\0") == 0, "Path not set.");
+        ASSERT(http_req_header_obj.protocol == PROTOCOL_UNKNOWN, "Protocol set to UNKNOWN.");
 
         ASSERT(
             http_header_init("\r\n", &http_req_header_obj) == ERR_INVALID, "Empty header handled.");
-        ASSERT(http_req_header_obj.req_method == METHOD_UNKNOWN, "Unknown method set.");
-        ASSERT(strcmp(http_req_header_obj.req_path, "\0") == 0, "Path not set.");
-        ASSERT(http_req_header_obj.req_protocol == PROTOCOL_UNKNOWN, "Protocol set to UNKNOWN.");
+        ASSERT(http_req_header_obj.method == METHOD_UNKNOWN, "Unknown method set.");
+        ASSERT(strcmp(http_req_header_obj.location, "\0") == 0, "Path not set.");
+        ASSERT(http_req_header_obj.protocol == PROTOCOL_UNKNOWN, "Protocol set to UNKNOWN.");
     }
 }
 #endif /* TEST == 1 */
