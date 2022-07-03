@@ -70,7 +70,7 @@ typedef struct JsonItem
 
 typedef struct JsonObj
 {
-    const String* json_string_p;
+    String json_string;
     JsonItem* root_p;
 } JsonObj;
 
@@ -104,7 +104,7 @@ GET_ARRAY_VALUE_h(value_child_p, JsonItem**);
 #define JsonObj_new(in_json, out_json)                                                             \
     _Generic(in_json,                                                                              \
         const char*  : JsonObj_new_from_char_p,                                                    \
-        String*      : JsonObj_new_from_string_p                                                   \
+        String*     : JsonObj_new_from_string_p                                                   \
         )(in_json, out_json)
 
 #define Json_get(json_stuff, needle, out_p)                                                        \

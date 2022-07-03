@@ -10,6 +10,7 @@
 
 #include "error.h"
 #include "logger.h"
+#include "my_memory.h"
 
 #define UNUSED(x) (void)(x)
 #if TEST == 1

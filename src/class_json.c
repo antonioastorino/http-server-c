@@ -39,7 +39,7 @@ ElementType get_value_type(char* initial_char_p)
     }
 }
 
-String* strip_whitespace(const String* json_string_p)
+String strip_whitespace(const String* json_string_p)
 {
     // The returned string cannot be longer than the input string (plus an termination char).
     char ret_cleaned_char_p[json_string_p->length + 1];
@@ -61,8 +61,7 @@ String* strip_whitespace(const String* json_string_p)
         }
     }
     ret_cleaned_char_p[pos_out] = '\0';
-    String* ret_string_p        = String_new(ret_cleaned_char_p);
-    return ret_string_p;
+    return String_new(ret_cleaned_char_p);
 }
 
 char* terminate_str(char* char_p)
@@ -87,7 +86,7 @@ char* terminate_str(char* char_p)
     return NULL;
 }
 
-String* generate_tokens(String* json_string_p)
+String generate_tokens(String* json_string_p)
 {
     char ret_tokens_char_p[json_string_p->length];
 
@@ -286,9 +285,9 @@ void deserialize(JsonItem* curr_item_p, char** start_pos_p)
 // TODO: Create _Generic and unit tests.
 Error JsonObj_new_from_char_p(const char* json_char_p, JsonObj** out_json_obj_pp)
 {
-    String* json_string = String_new(json_char_p);
-    Error ret_result    = JsonObj_new(json_string, out_json_obj_pp);
-    String_destroy(json_string);
+    String json_string = String_new(json_char_p);
+    Error ret_result    = JsonObj_new(&json_string, out_json_obj_pp);
+    String_destroy(&json_string);
     return ret_result;
 }
 
@@ -300,19 +299,19 @@ Error JsonObj_new_from_string_p(const String* json_string_p, JsonObj** out_json_
         LOG_ERROR("Empty JSON string detected");
         return ERR_EMPTY_STRING;
     }
-    String* trimmed_json_string_p = strip_whitespace(json_string_p);
-    if ((trimmed_json_string_p->str[0]
-         != '{') /*&& (*out_json_obj_pp->json_string_p->str[0] != '[')*/)
+    String trimmed_json_string = strip_whitespace(json_string_p);
+    if ((trimmed_json_string.str[0]
+         != '{') /*&& (*out_json_obj_pp->json_string.str[0] != '[')*/)
     {
         // TODO: Handle case in which the JSON string starts with [{ (array of objects).
-        String_destroy(trimmed_json_string_p);
+        String_destroy(&trimmed_json_string);
         LOG_ERROR("Invalid JSON string.");
         return ERR_JSON_INVALID;
     }
     *out_json_obj_pp                  = (JsonObj*)MALLOC(sizeof(JsonObj));
-    (*out_json_obj_pp)->json_string_p = trimmed_json_string_p;
+    (*out_json_obj_pp)->json_string = trimmed_json_string;
 
-    char* curr_pos_p      = (*out_json_obj_pp)->json_string_p->str; // position analyzed (iterator)
+    char* curr_pos_p      = (*out_json_obj_pp)->json_string.str; // position analyzed (iterator)
     JsonItem* curr_item_p = (JsonItem*)MALLOC(sizeof(JsonItem));
     curr_item_p->value    = (JsonValue*)MALLOC(sizeof(JsonValue));
     curr_item_p->parent   = curr_item_p; // Set the parent to itself to recognize 'root'.
@@ -363,7 +362,7 @@ void JsonObj_destroy(JsonObj* json_obj_p)
     {
         JsonItem_destroy(json_obj_p->root_p);
     }
-    String_destroy((String*)json_obj_p->json_string_p);
+    String_destroy(&json_obj_p->json_string);
     FREE(json_obj_p);
     json_obj_p = NULL;
 }
@@ -522,7 +521,7 @@ GET_ARRAY_VALUE_c(value_child_p, VALUE_ITEM, JsonItem**);
 
 #if TEST == 1
 
-String* load_file(char* filename)
+String load_file(char* filename)
 {
     FILE* json_file = fopen(filename, "r");
     int c;
@@ -552,10 +551,10 @@ String* load_file(char* filename)
     }
     buf[chars_read++] = '\0';
     fclose(json_file);
-    String* json_string_p = String_new(buf);
+    String json_string = String_new(buf);
     FREE(buf);
     buf = NULL;
-    return json_string_p;
+    return json_string;
 }
 
 void test_class_json()
@@ -630,8 +629,8 @@ void test_class_json()
         float value_float;
         JsonArray* json_array;
         printf("here\n");
-        String* json_string_p = load_file("test/assets/test_json_array_1.json");
-        JsonObj_new(json_string_p, &json_obj_p);
+        String json_string = load_file("test/assets/test_json_array_1.json");
+        JsonObj_new(&json_string, &json_obj_p);
         Json_get(json_obj_p->root_p, "array_key", &json_array);
         ASSERT_EQ(json_array != NULL, true, "Array found as root element.");
         Json_get(json_array, 0, &json_item);
@@ -648,11 +647,11 @@ void test_class_json()
         Json_get(json_array, 3, &value_uint);
         ASSERT_EQ(value_uint, 32, "Array element INT found.");
         JsonObj_destroy(json_obj_p);
-        String_destroy(json_string_p);
+        String_destroy(&json_string);
     }
     PRINT_TEST_TITLE("test_json_array_2.json");
     {
-        String* json_string_p = load_file("test/assets/test_json_array_2.json");
+        String json_string = load_file("test/assets/test_json_array_2.json");
         JsonItem* json_item;
         JsonObj* json_obj_p;
         size_t value_uint;
@@ -660,7 +659,7 @@ void test_class_json()
         float value_float;
         JsonArray* json_array;
         JsonArray* json_array_2;
-        JsonObj_new(json_string_p, &json_obj_p);
+        JsonObj_new(&json_string, &json_obj_p);
         Json_get(json_obj_p->root_p, "array_key", &json_array);
         ASSERT_EQ(json_array != NULL, true, "Array found as root element.");
         Json_get(json_array, 0, &json_item);
@@ -678,7 +677,7 @@ void test_class_json()
         Json_get(json_array_2, 1, &value_str);
         ASSERT_EQ(value_str, "hello", "Value STRING found");
         JsonObj_destroy(json_obj_p);
-        String_destroy(json_string_p);
+        String_destroy(&json_string);
     }
     PRINT_TEST_TITLE("test_json_array_3.json");
     {
@@ -687,8 +686,8 @@ void test_class_json()
         const char* value_str;
         size_t value_uint;
         JsonArray* json_array;
-        String* json_string_p = load_file("test/assets/test_json_array_3.json");
-        JsonObj_new(json_string_p, &json_obj_p);
+        String json_string = load_file("test/assets/test_json_array_3.json");
+        JsonObj_new(&json_string, &json_obj_p);
         ASSERT(Json_get(json_obj_p->root_p, "Snapshot", &json_item) == ERR_ALL_GOOD, "Ok");
         ASSERT(Json_get(json_item, "Value", &value_uint) == ERR_ALL_GOOD, "Ok");
         ASSERT(Json_get(json_item, "Data", &json_array) == ERR_ALL_GOOD, "Ok");
@@ -696,7 +695,7 @@ void test_class_json()
         ASSERT(Json_get(json_item, "Time", &value_str) == ERR_ALL_GOOD, "Ok");
         ASSERT_EQ(value_str, "2021-07-23T08:09:00.000000Z", "Time correct.");
         JsonObj_destroy(json_obj_p);
-        String_destroy(json_string_p);
+        String_destroy(&json_string);
     }
     PRINT_TEST_TITLE("Testing test/assets/test_json.json");
     {
@@ -706,9 +705,9 @@ void test_class_json()
         size_t value_uint;
         float value_float;
         JsonArray* json_array;
-        String* json_string_p = load_file("test/assets/test_json.json");
-        JsonObj_new_from_string_p(json_string_p, &json_obj_p);
-        String_destroy(json_string_p); // We can delete it.
+        String json_string = load_file("test/assets/test_json.json");
+        JsonObj_new_from_string_p(&json_string, &json_obj_p);
+        String_destroy(&json_string); // We can delete it.
         Json_get(json_obj_p->root_p, "text_key", &value_str);
         ASSERT_EQ("text_value", value_str, "String*value found in first item");
 
@@ -756,22 +755,20 @@ void test_class_json()
     PRINT_TEST_TITLE("Invalid JSON string - empty")
     {
         JsonObj* json_obj_p;
-        String* json_string_p;
-        json_string_p = String_new("");
+        String json_string = String_new("");
         ASSERT(
-            JsonObj_new_from_string_p(json_string_p, &json_obj_p) == ERR_EMPTY_STRING,
+            JsonObj_new_from_string_p(&json_string, &json_obj_p) == ERR_EMPTY_STRING,
             "Empty JSON fails to initialize.");
-        String_destroy(json_string_p);
+        String_destroy(&json_string);
     }
     PRINT_TEST_TITLE("Invalid JSON string - string not starting with '{'")
     { // TODO: crate token analyzer and add TC's.
-        String* json_string_p;
         JsonObj* json_obj_p;
-        json_string_p = String_new("This is not a JSON file");
+        String json_string = String_new("This is not a JSON file");
         ASSERT(
-            JsonObj_new_from_string_p(json_string_p, &json_obj_p) == ERR_JSON_INVALID,
+            JsonObj_new_from_string_p(&json_string, &json_obj_p) == ERR_JSON_INVALID,
             "Invalid JSON fails to initialize.");
-        String_destroy(json_string_p);
+        String_destroy(&json_string);
     }
     PRINT_TEST_TITLE("Fixed memory leak");
     {
@@ -790,10 +787,9 @@ void test_class_json()
         JsonObj* json_obj_p;
         size_t value_uint;
         int value_int;
-        String* json_string_p;
         Error ret_res;
-        json_string_p = load_file("test/assets/test_json_numbers.json");
-        JsonObj_new(json_string_p, &json_obj_p);
+        String json_string= load_file("test/assets/test_json_numbers.json");
+        JsonObj_new(&json_string, &json_obj_p);
         Json_get(json_obj_p->root_p, "value_int", &value_uint);
         ASSERT_EQ((size_t)23, value_uint, "Conversion from INT to SIZE_T successfull");
         Json_get(json_obj_p->root_p, "value_small_uint", &value_int);
@@ -803,7 +799,7 @@ void test_class_json()
         ret_res = Json_get(json_obj_p->root_p, "value_uint", &value_int);
         ASSERT(ret_res == ERR_INVALID, "Conversion from large SIZE_T to INT failed");
         JsonObj_destroy(json_obj_p);
-        String_destroy(json_string_p);
+        String_destroy(&json_string);
     }
     /**/
 }

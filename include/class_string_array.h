@@ -2,9 +2,9 @@
 #define CLASS_STRING_ARRAY_H
 #include "common.h"
 
-typedef struct StringArray
+typedef struct
 {
-    size_t numOfElements;
+    size_t num_of_elements;
     char* str_char_p;
     char** str_array_char_p;
 } StringArray;

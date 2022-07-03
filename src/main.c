@@ -96,8 +96,10 @@ int main(int argc, const char* argv[])
                 return -1;
             }
             printf("Client socket: %d - bytes %d\n", client_socket, bytes_recv);
-            printf("%s\n", in_buff);
-
+            //            printf("%s\n", in_buff);
+            StringArray req_string_array_obj = StringArray_new(in_buff, "\r\n\r\n");
+            printf("Size:%lu\n", req_string_array_obj.num_of_elements);
+            printf("Body length: %lu\n", strlen(req_string_array_obj.str_array_char_p[1]));
             if (strncmp(in_buff, "GET /favicon.ico", 16) == 0)
             {
                 printf("Sending icon\n");
@@ -145,6 +147,7 @@ int main(int argc, const char* argv[])
                 }
                 fclose(index_html);
             }
+            StringArray_destroy(&req_string_array_obj);
             close(client_socket);
             printf("[CHILD] Closing socket Nr. %d\n", client_socket);
             shutdown(client_socket, SHUT_RDWR);
@@ -165,11 +168,11 @@ int main(int argc, const char* argv[])
 int main()
 {
     test_http();
-    //    test_class_string();
-    //    test_class_string_array();
-    //    test_class_json();
-    //    test_converter();
-    //    test_fs_utils();
+    test_class_string();
+    test_class_string_array();
+    test_class_json();
+    test_converter();
+    test_fs_utils();
 }
 #else
 #error "TEST must be 0 or 1"

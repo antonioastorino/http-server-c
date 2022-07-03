@@ -15,16 +15,16 @@ typedef struct String
 } String;
 
 /************************************* (De)Constructors ***************************************/
-String* String_new(const char*, ...);
-String* String_join(const char**, const char*);
-String* String_clone(const String*);
+String String_new(const char*, ...);
+String String_join(const char**, const char*);
+String String_clone(const String*);
 void String_destroy(String*);
 
 /***************************************** Checkers *******************************************/
 bool String_is_null(const String*);
 bool String_starts_with(const String*, const char*);
-Error String_between_patterns_in_string_p(String*, const char*, const char*, String**);
-Error String_between_patterns_in_char_p(const char*, const char*, const char*, String**);
+Error String_between_patterns_in_string_p(String*, const char*, const char*, String*);
+Error String_between_patterns_in_char_p(const char*, const char*, const char*, String*);
 bool String_match(const String*, const String*);
 
 /**************************************** Modifiers *******************************************/

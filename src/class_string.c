@@ -17,11 +17,11 @@ bool String_is_null(const String* string_obj_p)
     return false;
 }
 
-String* String_new(const char* format, ...)
+String String_new(const char* format, ...)
 {
     va_list args;
     char* tmp_str_p = NULL;
-    String* out_string_obj_p;
+    String out_string_obj;
     va_start(args, format);
     // Calculate how many bytes are needed (excluding the terminating '\0').
     if (VASPRINTF(&tmp_str_p, format, args) == -1)
@@ -37,35 +37,34 @@ String* String_new(const char* format, ...)
     LOG_TRACE("Created string.")
     va_end(args);
     // Set the `.len` parameter as the length of the string, excluding the terminating '\0'.
-    out_string_obj_p         = (String*)MALLOC(sizeof(String));
-    out_string_obj_p->str    = tmp_str_p;
-    out_string_obj_p->length = actual_size;
-    out_string_obj_p->size   = allocated_size;
-    return out_string_obj_p;
+    out_string_obj.str    = tmp_str_p;
+    out_string_obj.length = actual_size;
+    out_string_obj.size   = allocated_size;
+    return out_string_obj;
 }
 
 // The array must end with a NULL value.
-String* String_join(const char** char_array, const char* joint)
+String String_join(const char** char_array, const char* joint)
 {
+    String out_string_obj = {.length = -1, .size = -1, .str = NULL};
     if (!char_array || !char_array[0])
     {
         LOG_ERROR("Please provide a valid input array.");
-        return (String*)NULL;
+        return out_string_obj;
     }
     const char** curr_element = char_array;
-    String* out_string_obj_p  = String_new(*curr_element);
+    out_string_obj            = String_new(*curr_element);
     while (*(curr_element + 1) != NULL)
     {
         // TODO: Use String_renew() instead.
-        String* new_ret_string_p
-            = String_new("%s%s%s", out_string_obj_p->str, joint, *(++curr_element));
-        String_destroy(out_string_obj_p);
-        out_string_obj_p = new_ret_string_p;
+        String new_ret_string = String_new("%s%s%s", out_string_obj.str, joint, *(++curr_element));
+        String_destroy(&out_string_obj);
+        out_string_obj = new_ret_string;
     }
-    return out_string_obj_p;
+    return out_string_obj;
 }
 
-String* String_clone(const String* origin) { return String_new(origin->str); }
+String String_clone(const String* origin) { return String_new(origin->str); }
 
 void String_destroy(String* string_obj_p)
 {
@@ -73,8 +72,6 @@ void String_destroy(String* string_obj_p)
     string_obj_p->str    = 0;
     string_obj_p->length = -1;
     string_obj_p->size   = -1;
-
-    FREE(string_obj_p);
 }
 
 Error _String_print(const String* string_obj_p)
@@ -173,10 +170,10 @@ Error String_replace_char(
         const suffix replacement,                                                                  \
         size_t* out_count)                                                                         \
     {                                                                                              \
-        String* replacement_string_p = String_new(format, replacement);                            \
-        Error res_replace            = String_replace_pattern(                                     \
-            haystack_string_p, needle, replacement_string_p->str, out_count);           \
-        String_destroy(replacement_string_p);                                                      \
+        String replacement_string = String_new(format, replacement);                               \
+        Error res_replace         = String_replace_pattern(                                        \
+            haystack_string_p, needle, replacement_string.str, out_count);                 \
+        String_destroy(&replacement_string);                                                       \
         return res_replace;                                                                        \
     }
 
@@ -265,7 +262,7 @@ Error String_between_patterns_in_char_p(
     const char* in_char_p,
     const char* prefix,
     const char* suffix,
-    String** out_string_obj_pp)
+    String* out_string_obj_p)
 {
     if (in_char_p == NULL)
     {
@@ -298,7 +295,7 @@ Error String_between_patterns_in_char_p(
     memcpy(tmp, start, end - start);
     tmp[end - start]   = '\0';
 
-    *out_string_obj_pp = String_new(tmp);
+    (*out_string_obj_p) = String_new(tmp);
     FREE(tmp);
     tmp = NULL;
     return ERR_ALL_GOOD;
@@ -308,9 +305,9 @@ Error String_between_patterns_in_string_p(
     String* in_string_p,
     const char* prefix,
     const char* suffix,
-    String** out_string_obj_pp)
+    String* out_string_obj_p)
 {
-    return String_between_patterns_in_char_p(in_string_p->str, prefix, suffix, out_string_obj_pp);
+    return String_between_patterns_in_char_p(in_string_p->str, prefix, suffix, out_string_obj_p);
 }
 
 #if TEST == 1
@@ -321,98 +318,97 @@ void test_class_string()
     PRINT_TEST_TITLE("New from string")
     {
         const char* str       = "Hello everybody";
-        String* test_string_p = String_new(str);
-        ASSERT_EQ(test_string_p->length, strlen(str), "Length correct.");
-        ASSERT_EQ(test_string_p->size, (size_t)(strlen(str) * 1.5), "Size correct.");
-        ASSERT_EQ((int)_String_println(test_string_p), ERR_ALL_GOOD, "Printing functions work.");
-        String_destroy(test_string_p);
-        ASSERT_EQ(String_is_null(test_string_p), true, "Already destroyed.");
-        test_string_p = NULL;
-        ASSERT_EQ(String_is_null(test_string_p), true, "String pointer set to NULL.");
+        String test_string = String_new(str);
+        ASSERT_EQ(test_string.length, strlen(str), "Length correct.");
+        ASSERT_EQ(test_string.size, (size_t)(strlen(str) * 1.5), "Size correct.");
+        ASSERT_EQ((int)_String_println(&test_string), ERR_ALL_GOOD, "Printing functions work.");
+        String_destroy(&test_string);
+        ASSERT_EQ(String_is_null(&test_string), true, "Already destroyed.");
     }
     PRINT_TEST_TITLE("New from formatter");
     {
         const char* format1   = "Old string content.";
-        String* test_string_p = String_new(format1);
-        size_t initial_length = strlen(test_string_p->str);
+        String test_string = String_new(format1);
+        size_t initial_length = strlen(test_string.str);
         size_t initial_size   = (size_t)(initial_length * 1.5);
-        ASSERT_EQ(test_string_p->length, initial_length, "Length correct.");
-        ASSERT_EQ(test_string_p->size, initial_size, "Size correct.");
+        ASSERT_EQ(test_string.length, initial_length, "Length correct.");
+        ASSERT_EQ(test_string.size, initial_size, "Size correct.");
+        String_destroy(&test_string);
     }
     PRINT_TEST_TITLE("starts_with() function");
     {
-        String* test_string_p = String_new("Old string content.");
+        String test_string = String_new("Old string content.");
         ASSERT_EQ(
-            String_starts_with(test_string_p, "Old string"), true, "starts_with() works when true");
+            String_starts_with(&test_string, "Old string"), true, "starts_with() works when true");
         ASSERT_EQ(
-            String_starts_with(test_string_p, "new"), false, "starts_with() works when false");
+            String_starts_with(&test_string, "new"), false, "starts_with() works when false");
         ASSERT_EQ(
-            String_starts_with(test_string_p, ""),
+            String_starts_with(&test_string, ""),
             true,
             "starts_with() works when needle is empty");
-        String_destroy(test_string_p);
+        String_destroy(&test_string);
     }
 
     PRINT_TEST_TITLE("clone() function")
     {
-        String* test_origin = String_new("Original");
-        String* test_clone  = String_clone(test_origin);
-        size_t length       = test_origin->length;
-        size_t size         = test_origin->size;
-        ASSERT_EQ(test_origin->str, test_clone->str, "Strings match.");
-        String_destroy(test_origin); // The clone should still be alive.
-        ASSERT_EQ(length, test_clone->length, "Size copied");
-        ASSERT_EQ(size, test_clone->size, "Size copied");
-        String_destroy(test_clone);
+        String test_origin = String_new("Original");
+        String test_clone  = String_clone(&test_origin);
+        size_t length       = test_origin.length;
+        size_t size         = test_origin.size;
+        ASSERT_EQ(test_origin.str, test_clone.str, "Strings match.");
+        String_destroy(&test_origin); // The clone should still be alive.
+        ASSERT_EQ(length, test_clone.length, "Size copied");
+        ASSERT_EQ(size, test_clone.size, "Size copied");
+        String_destroy(&test_clone);
     }
     PRINT_TEST_TITLE("replace_char() function - replace with nothing.");
     {
-        String* test_string_p = String_new("Some text to be modified.");
+        String test_string = String_new("Some text to be modified.");
         size_t num_of_replacements;
-        _String_println(test_string_p);
+        _String_println(&test_string);
         ASSERT(
-            String_replace_char(test_string_p, ' ', '\0', &num_of_replacements) == ERR_ALL_GOOD,
+            String_replace_char(&test_string, ' ', '\0', &num_of_replacements) == ERR_ALL_GOOD,
             "Replacement successful.");
-        ASSERT_EQ(test_string_p->str, "Sometexttobemodified.", "Needles removed correctly.");
+        ASSERT_EQ(test_string.str, "Sometexttobemodified.", "Needles removed correctly.");
         ASSERT_EQ(num_of_replacements, 4, "Replacements counted correctly.");
-        _String_println(test_string_p);
+        _String_println(&test_string);
 
         ASSERT(
-            String_replace_char(test_string_p, 't', '_', &num_of_replacements) == ERR_ALL_GOOD,
+            String_replace_char(&test_string, 't', '_', &num_of_replacements) == ERR_ALL_GOOD,
             "Replacement successful.");
-        ASSERT_EQ(test_string_p->str, "Some_ex__obemodified.", "Needles replaced correctly.");
-        _String_println(test_string_p);
+        ASSERT_EQ(test_string.str, "Some_ex__obemodified.", "Needles replaced correctly.");
+        _String_println(&test_string);
 
         ASSERT(
-            String_replace_char(test_string_p, '&', '^', &num_of_replacements) == ERR_ALL_GOOD,
+            String_replace_char(&test_string, '&', '^', &num_of_replacements) == ERR_ALL_GOOD,
             "Replacement successful");
         ASSERT_EQ(
-            test_string_p->str, "Some_ex__obemodified.", "String unchanged - needle not found.");
+            test_string.str, "Some_ex__obemodified.", "String unchanged - needle not found.");
         ASSERT_EQ(num_of_replacements, 0, "No replacements counted correctly.");
-        _String_println(test_string_p);
+        _String_println(&test_string);
 
-        String_replace_char(test_string_p, 'S', '+', &num_of_replacements);
-        String_replace_char(test_string_p, 'o', '+', &num_of_replacements);
-        String_replace_char(test_string_p, 'm', '+', &num_of_replacements);
-        String_replace_char(test_string_p, '_', '+', &num_of_replacements);
-        String_replace_char(test_string_p, 'e', '+', &num_of_replacements);
-        String_replace_char(test_string_p, 'x', '+', &num_of_replacements);
-        String_replace_char(test_string_p, 'b', '+', &num_of_replacements);
-        String_replace_char(test_string_p, 'd', '+', &num_of_replacements);
-        String_replace_char(test_string_p, 'i', '+', &num_of_replacements);
-        String_replace_char(test_string_p, 'f', '+', &num_of_replacements);
-        String_replace_char(test_string_p, '.', '+', &num_of_replacements);
+        String_replace_char(&test_string, 'S', '+', &num_of_replacements);
+        String_replace_char(&test_string, 'o', '+', &num_of_replacements);
+        String_replace_char(&test_string, 'm', '+', &num_of_replacements);
+        String_replace_char(&test_string, '_', '+', &num_of_replacements);
+        String_replace_char(&test_string, 'e', '+', &num_of_replacements);
+        String_replace_char(&test_string, 'x', '+', &num_of_replacements);
+        String_replace_char(&test_string, 'b', '+', &num_of_replacements);
+        String_replace_char(&test_string, 'd', '+', &num_of_replacements);
+        String_replace_char(&test_string, 'i', '+', &num_of_replacements);
+        String_replace_char(&test_string, 'f', '+', &num_of_replacements);
+        String_replace_char(&test_string, '.', '+', &num_of_replacements);
         ASSERT_EQ(
-            test_string_p->str, "+++++++++++++++++++++", "Replaced all chars in string with '+'.");
-        _String_println(test_string_p);
+            test_string.str, "+++++++++++++++++++++", "Replaced all chars in string with '+'.");
+        _String_println(&test_string);
 
-        size_t initial_length = test_string_p->length;
-        String_replace_char(test_string_p, '+', '\0', &num_of_replacements);
-        ASSERT_EQ(test_string_p->str, "", "Ths string is correctly emptied.");
-        ASSERT_EQ(test_string_p->length, 0, "Ths length is correctly set to 0.");
+        size_t initial_length = test_string.length;
+        String_replace_char(&test_string, '+', '\0', &num_of_replacements);
+        ASSERT_EQ(test_string.str, "", "Ths string is correctly emptied.");
+        ASSERT_EQ(test_string.length, 0, "Ths length is correctly set to 0.");
         ASSERT_EQ(num_of_replacements, initial_length, "Number of replacements counted correctly.");
-        _String_println(test_string_p);
-        String_destroy(test_string_p);
+        _String_println(&test_string);
+        String_destroy(&test_string);
     }
 
     PRINT_TEST_TITLE("Test String_between_patterns()");
@@ -420,150 +416,152 @@ void test_class_string()
         const char* input_char_p = "This string contains a \":pattern:\" to be found";
 
         {
-            String* pattern_string_p;
+            String pattern_string;
             ASSERT(
-                String_between_patterns(input_char_p, "\":", ":\"", &pattern_string_p)
+                String_between_patterns(input_char_p, "\":", ":\"", &pattern_string)
                     == ERR_ALL_GOOD,
                 "String between pattern success.");
-            ASSERT_EQ(pattern_string_p->str, "pattern", "Pattern found in C string");
-            String_destroy(pattern_string_p);
+            ASSERT_EQ(pattern_string.str, "pattern", "Pattern found in C string");
+            String_destroy(&pattern_string);
         }
         {
-            String* pattern_string_p;
-            String* test_string_p = String_new(input_char_p);
-            String_between_patterns(test_string_p, "\":", ":\"", &pattern_string_p);
-            ASSERT_EQ(pattern_string_p->str, "pattern", "Pattern found String Object");
-            String_destroy(pattern_string_p);
+            String pattern_string;
+            String test_string = String_new(input_char_p);
+            String_between_patterns(&test_string, "\":", ":\"", &pattern_string);
+            ASSERT_EQ(pattern_string.str, "pattern", "Pattern found String Object");
+            String_destroy(&pattern_string);
+            String_destroy(&test_string);
         }
         {
-            String* pattern_string_p;
-            String* test_string_p = String_new(input_char_p);
+            String pattern_string;
+            String test_string = String_new(input_char_p);
             Error res_pattern_not_found
-                = String_between_patterns(test_string_p, "--", ":\"", &pattern_string_p);
+                = String_between_patterns(&test_string, "--", ":\"", &pattern_string);
             ASSERT(res_pattern_not_found == ERR_NOT_FOUND, "Prefix not found");
 
             res_pattern_not_found
-                = String_between_patterns(test_string_p, "\":", "--", &pattern_string_p);
+                = String_between_patterns(&test_string, "\":", "--", &pattern_string);
             ASSERT(res_pattern_not_found == ERR_NOT_FOUND, "Suffix not found");
 
-            String_destroy(test_string_p);
+            String_destroy(&test_string);
         }
     }
     PRINT_TEST_TITLE("Pattern replacement with empty string");
     {
         size_t num_of_replacements;
-        String* test_string_p = String_new("This pattern contains \\r\\n to be removed");
-        String_replace_pattern(test_string_p, "\\r\\n ", "", &num_of_replacements);
-        ASSERT_EQ("This pattern contains to be removed", test_string_p->str, "Pattern deleted");
+        String test_string = String_new("This pattern contains \\r\\n to be removed");
+        String_replace_pattern(&test_string, "\\r\\n ", "", &num_of_replacements);
+        ASSERT_EQ("This pattern contains to be removed", test_string.str, "Pattern deleted");
         ASSERT_EQ(num_of_replacements, 1, "Number of replacements counted correctly.");
-        String_destroy(test_string_p);
+        String_destroy(&test_string);
     }
     PRINT_TEST_TITLE("Pattern replacement with short string");
     {
         size_t num_of_replacements;
-        String* test_string_p = String_new("This pattern contains \\r\\n to be replaced");
-        String_replace_pattern(test_string_p, "\\r\\n", "HELLO WORLD", &num_of_replacements);
+        String test_string = String_new("This pattern contains \\r\\n to be replaced");
+        String_replace_pattern(&test_string, "\\r\\n", "HELLO WORLD", &num_of_replacements);
         ASSERT_EQ(
             "This pattern contains HELLO WORLD to be replaced",
-            test_string_p->str,
+            test_string.str,
             "Pattern replaced");
         ASSERT_EQ(num_of_replacements, 1, "Number of replacements counted correctly.");
-        String_destroy(test_string_p);
+        String_destroy(&test_string);
     }
     PRINT_TEST_TITLE("Pattern replacement with float");
     {
         size_t num_of_replacements;
-        String* test_string_p = String_new("This pattern contains \\r\\n to be replaced");
+        String test_string = String_new("This pattern contains \\r\\n to be replaced");
         String_replace_pattern_with_format(
-            test_string_p, "\\r\\n", "%.4f", 10.3f, &num_of_replacements);
+            &test_string, "\\r\\n", "%.4f", 10.3f, &num_of_replacements);
         ASSERT_EQ(
-            "This pattern contains 10.3000 to be replaced", test_string_p->str, "Pattern replaced");
+            "This pattern contains 10.3000 to be replaced", test_string.str, "Pattern replaced");
         ASSERT_EQ(num_of_replacements, 1, "Number of replacements counted correctly.");
-        String_destroy(test_string_p);
+        String_destroy(&test_string);
     }
     PRINT_TEST_TITLE("Pattern replacement with size_t");
     {
         size_t num_of_replacements;
-        String* test_string_p = String_new("This pattern contains \\r\\n to be replaced");
+        String test_string = String_new("This pattern contains \\r\\n to be replaced");
         String_replace_pattern_with_format(
-            test_string_p, "\\r\\n", "%lu", (size_t)1003, &num_of_replacements);
+            &test_string, "\\r\\n", "%lu", (size_t)1003, &num_of_replacements);
         ASSERT_EQ(
-            "This pattern contains 1003 to be replaced", test_string_p->str, "Pattern replaced");
+            "This pattern contains 1003 to be replaced", test_string.str, "Pattern replaced");
         ASSERT_EQ(num_of_replacements, 1, "Number of replacements counted correctly.");
-        String_destroy(test_string_p);
+        String_destroy(&test_string);
     }
 
     PRINT_TEST_TITLE("Pattern replacement with int");
     {
         size_t num_of_replacements;
-        String* test_string_p = String_new("This pattern contains \\r\\n to be replaced");
+        String test_string = String_new("This pattern contains \\r\\n to be replaced");
         String_replace_pattern_with_format(
-            test_string_p, "\\r\\n", "%d", -1003, &num_of_replacements);
+            &test_string, "\\r\\n", "%d", -1003, &num_of_replacements);
         ASSERT_EQ(
-            "This pattern contains -1003 to be replaced", test_string_p->str, "Pattern replaced");
+            "This pattern contains -1003 to be replaced", test_string.str, "Pattern replaced");
         ASSERT_EQ(num_of_replacements, 1, "Number of replacements counted correctly.");
-        String_destroy(test_string_p);
+        String_destroy(&test_string);
     }
     PRINT_TEST_TITLE("Pattern replacement with long string");
     {
         size_t num_of_replacements;
-        String* test_string_p = String_new("This pattern contains \\r\\n to be replaced");
+        String test_string = String_new("This pattern contains \\r\\n to be replaced");
         String_replace_pattern(
-            test_string_p,
+            &test_string,
             "\\r\\n",
             "HELLO WORLD! This is the replacement pattern",
             &num_of_replacements);
         ASSERT_EQ(
             "This pattern contains HELLO WORLD! This is the replacement pattern to be replaced",
-            test_string_p->str,
+            test_string.str,
             "Pattern replaced");
         ASSERT_EQ(num_of_replacements, 1, "Number of replacements counted correctly.");
-        String_destroy(test_string_p);
+        String_destroy(&test_string);
     }
     PRINT_TEST_TITLE("Pattern not replaced because missing");
     {
         size_t num_of_replacements;
-        String* test_string_p = String_new("This string does not contain a pattern to be replaced");
+        String test_string = String_new("This string does not contain a pattern to be replaced");
         num_of_replacements   = String_replace_pattern(
-            test_string_p,
+            &test_string,
             "missing pattern",
             "HELLO WORLD! This is the replacement pattern",
             &num_of_replacements);
         ASSERT_EQ(
             "This string does not contain a pattern to be replaced",
-            test_string_p->str,
+            test_string.str,
             "Pattern not found");
         ASSERT_EQ(num_of_replacements, 0, "Number of replacements counted correctly.");
-        String_destroy(test_string_p);
+        String_destroy(&test_string);
     }
     PRINT_TEST_TITLE("Trying to join an empty array");
     {
         const char* char_array[] = {NULL};
-        String* test_string_p    = String_join(char_array, "hello");
-        ASSERT(test_string_p == NULL, "No string created");
+        String test_string    = String_join(char_array, "hello");
+        ASSERT(test_string.str == NULL, "No string created");
+        String_destroy(&test_string);
     }
 
     PRINT_TEST_TITLE("Join with 1 element");
     {
         const char* one_element_array[] = {"element 1", NULL};
-        String* test_string_p           = String_join(one_element_array, "hello");
-        ASSERT_EQ(test_string_p->str, "element 1", "No concatenation performed");
-        String_destroy(test_string_p);
+        String test_string           = String_join(one_element_array, "hello");
+        ASSERT_EQ(test_string.str, "element 1", "No concatenation performed");
     }
 
     PRINT_TEST_TITLE("Join with 2 elements");
     {
         const char* two_element_array[] = {"element 1", "element 2", NULL};
-        String* test_string_p           = String_join(two_element_array, "|||");
-        ASSERT_EQ(test_string_p->str, "element 1|||element 2", "Concatenation correct");
-        String_destroy(test_string_p);
+        String test_string           = String_join(two_element_array, "|||");
+        ASSERT_EQ(test_string.str, "element 1|||element 2", "Concatenation correct");
+        String_destroy(&test_string);
     }
     PRINT_TEST_TITLE("Join with empty separator");
     {
         const char* foo_bar_element_array[] = {"F", "O", "O", "B", "A", "R", NULL};
-        String* test_string_p               = String_join(foo_bar_element_array, "");
-        ASSERT_EQ(test_string_p->str, "FOOBAR", "Concatenation correct");
-        String_destroy(test_string_p);
+        String test_string               = String_join(foo_bar_element_array, "");
+        ASSERT_EQ(test_string.str, "FOOBAR", "Concatenation correct");
+        String_destroy(&test_string);
     }
+    /**/
 }
 #endif

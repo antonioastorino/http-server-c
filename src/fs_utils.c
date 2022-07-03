@@ -185,7 +185,7 @@ Error fs_utils_create_with_content(const char* file_path_char_p, const char* new
     return _fs_utils_create_or_append(file_path_char_p, new_content_char_p, "w");
 }
 
-Error _fs_utils_read_to_string(const char* file_path_char_p, String** out_string_obj_pp)
+Error _fs_utils_read_to_string(const char* file_path_char_p, String* out_string_obj_p)
 {
     FILE* file_handler = fopen(file_path_char_p, "r");
     if (!file_handler)
@@ -220,7 +220,7 @@ Error _fs_utils_read_to_string(const char* file_path_char_p, String** out_string
     }
     buf[chars_read++] = '\0';
     fclose(file_handler);
-    (*out_string_obj_pp) = String_new(buf);
+    (*out_string_obj_p) = String_new(buf);
     FREE(buf);
     buf = NULL;
     return ERR_ALL_GOOD;
@@ -244,12 +244,12 @@ Error _fs_utils_recursive_rm_r(FTS* fts_p, const char* dir_path_char_p)
         while (link != NULL)
         {
             LOG_TRACE("Found child: %s.", link->fts_name);
-            String* child_path_string = String_new("%s/%s", dir_path_char_p, link->fts_name);
+            String child_path_string = String_new("%s/%s", dir_path_char_p, link->fts_name);
 
-            LOG_TRACE("Trying: %s.", child_path_string->str);
+            LOG_TRACE("Trying: %s.", child_path_string.str);
             // Do your recursion thing.
-            ret_res = _fs_utils_recursive_rm_r(fts_p, child_path_string->str);
-            String_destroy(child_path_string);
+            ret_res = _fs_utils_recursive_rm_r(fts_p, child_path_string.str);
+            String_destroy(&child_path_string);
             return_on_err(ret_res);
             // Go to the next entry.
             link = link->fts_link;
@@ -306,7 +306,7 @@ void test_fs_utils()
     Error ret_res;
     char* path_string;
     char* content_char_p;
-    String* content_string;
+    String content_string;
 
     PRINT_TEST_TITLE("mkdir - pass")
     path_string = "test/artifacts/test_folder_0";
@@ -365,19 +365,19 @@ void test_fs_utils()
     PRINT_TEST_TITLE("read to string - short text, use const String*for file path");
     path_string = "test/assets/readme.txt";
     fs_utils_read_to_string(path_string, &content_string);
-    ASSERT_EQ(content_string->str, "This is a very good string!", "File read correctly.");
-    String_destroy(content_string);
+    ASSERT_EQ(content_string.str, "This is a very good string!", "File read correctly.");
+    String_destroy(&content_string);
 
     PRINT_TEST_TITLE("read to string - short text, use const char * for file path");
     fs_utils_read_to_string("test/assets/readme.txt", &content_string);
-    ASSERT_EQ(content_string->str, "This is a very good string!", "File read correctly.");
-    String_destroy(content_string);
+    ASSERT_EQ(content_string.str, "This is a very good string!", "File read correctly.");
+    String_destroy(&content_string);
 
     PRINT_TEST_TITLE("read to string - long text");
     path_string = "test/assets/readme-long.txt";
     fs_utils_read_to_string(path_string, &content_string);
-    ASSERT_EQ(content_string->length, 16599, "Read string size matches.");
-    String_destroy(content_string);
+    ASSERT_EQ(content_string.length, 16599, "Read string size matches.");
+    String_destroy(&content_string);
 
     PRINT_TEST_TITLE("append to initially missing file");
     path_string    = "test/artifacts/new-file.txt";
@@ -386,8 +386,8 @@ void test_fs_utils()
     fs_utils_append(path_string, content_char_p);
     fs_utils_read_to_string(path_string, &content_string);
     ASSERT_EQ(
-        content_string->str, "this is new\nthis is new\n", "File created and modified correctly");
-    String_destroy(content_string);
+        content_string.str, "this is new\nthis is new\n", "File created and modified correctly");
+    String_destroy(&content_string);
 
     PRINT_TEST_TITLE("create with content string");
     path_string    = "test/artifacts/new-file-2.txt";
@@ -397,8 +397,8 @@ void test_fs_utils()
     // Second time - overwrite.
     fs_utils_create_with_content(path_string, content_char_p);
     fs_utils_read_to_string(path_string, &content_string);
-    ASSERT_EQ(content_string->str, "this is new\n", "File created and modified correctly");
-    String_destroy(content_string);
+    ASSERT_EQ(content_string.str, "this is new\n", "File created and modified correctly");
+    String_destroy(&content_string);
     /**/
 }
 #endif
