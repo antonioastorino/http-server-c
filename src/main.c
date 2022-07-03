@@ -97,57 +97,64 @@ int main(int argc, const char* argv[])
             }
             printf("Client socket: %d - bytes %d\n", client_socket, bytes_recv);
             //            printf("%s\n", in_buff);
-            StringArray req_string_array_obj = StringArray_new(in_buff, "\r\n\r\n");
-            printf("Size:%lu\n", req_string_array_obj.num_of_elements);
-            printf("Body length: %lu\n", strlen(req_string_array_obj.str_array_char_p[1]));
-            if (strncmp(in_buff, "GET /favicon.ico", 16) == 0)
+            HttpReqObj req_obj;
+            Error ret_res = HttpReqObj_new(in_buff, &req_obj);
+            switch (req_obj.req_header.req_method)
             {
-                printf("Sending icon\n");
-                off_t len     = 0; // set to 0 will send all the origin file
-                int icon_file = open("assets/favicon.ico", O_RDONLY);
-                if (icon_file == -1)
+            case METHOD_GET:
+                if (strncmp(req_obj.req_header.req_path, "/favicon.ico", 12) == 0)
                 {
-                    printf("Error opening icon file\n");
-                    return -1;
+                    printf("Sending icon\n");
+                    off_t len     = 0; // set to 0 will send all the origin file
+                    int icon_file = open("assets/favicon.ico", O_RDONLY);
+                    if (icon_file == -1)
+                    {
+                        printf("Error opening icon file\n");
+                        return -1;
+                    }
+                    int res = sendfile(icon_file, client_socket, 0, &len, NULL, 0);
+                    if (res == -1)
+                    {
+                        perror("Failed to send file");
+                        return -1;
+                    }
+                    printf("Bytes sent: %lld\n", len);
+                    close(icon_file);
                 }
-                int res = sendfile(icon_file, client_socket, 0, &len, NULL, 0);
-                if (res == -1)
+                else
                 {
-                    perror("Failed to send file");
-                    return -1;
-                }
-                printf("Bytes sent: %lld\n", len);
-                close(icon_file);
-            }
-            else
-            {
-                FILE* index_html = fopen("assets/index.html", "r");
-                if (index_html == NULL)
-                {
-                    printf("Not good!\n");
-                    return -1;
-                }
-                fseek(index_html, 0L, SEEK_END);
-                int sz = ftell(index_html);
-                rewind(index_html);
+                    FILE* index_html = fopen("assets/index.html", "r");
+                    if (index_html == NULL)
+                    {
+                        printf("Not good!\n");
+                        return -1;
+                    }
+                    fseek(index_html, 0L, SEEK_END);
+                    int sz = ftell(index_html);
+                    rewind(index_html);
 
-                sprintf(
-                    out_buff,
-                    "HTTP/1.0 200 OK\r\nContent-Type: text/html; "
-                    "charset=UTF-8\r\nContent-Length: "
-                    "%d\r\n\r\n",
-                    sz);
-                char c;
-                write(client_socket, (char*)out_buff, strlen((char*)out_buff));
-                //                fprintf(stdout, (char*)out_buff, strlen((char*)out_buff));
-                while ((c = getc(index_html)) != EOF)
-                {
-                    write(client_socket, (char*)&c, 1);
-                    //                    printf("%c", c);
+                    sprintf(
+                        out_buff,
+                        "HTTP/1.0 200 OK\r\nContent-Type: text/html; "
+                        "charset=UTF-8\r\nContent-Length: "
+                        "%d\r\n\r\n",
+                        sz);
+                    char c;
+                    write(client_socket, (char*)out_buff, strlen((char*)out_buff));
+                    //                fprintf(stdout, (char*)out_buff, strlen((char*)out_buff));
+                    while ((c = getc(index_html)) != EOF)
+                    {
+                        write(client_socket, (char*)&c, 1);
+                        //                    printf("%c", c);
+                    }
+                    fclose(index_html);
+                    break;
                 }
-                fclose(index_html);
+            default:
+                break;
             }
-            StringArray_destroy(&req_string_array_obj);
+
+            HttpReqObj_destroy(&req_obj);
             close(client_socket);
             printf("[CHILD] Closing socket Nr. %d\n", client_socket);
             shutdown(client_socket, SHUT_RDWR);
@@ -167,12 +174,13 @@ int main(int argc, const char* argv[])
 #elif TEST == 1
 int main()
 {
-    test_http();
-    //    test_class_string();
-    //    test_class_string_array();
-    //    test_class_json();
-    //    test_converter();
-    //    test_fs_utils();
+    test_http_header();
+    test_class_http();
+    test_class_string();
+    test_class_string_array();
+    test_class_json();
+    test_converter();
+    test_fs_utils();
 }
 #else
 #error "TEST must be 0 or 1"
