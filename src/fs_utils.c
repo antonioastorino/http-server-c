@@ -209,7 +209,7 @@ Error _fs_utils_read_to_string(const char* file_path_char_p, String* out_string_
         {
             /* time to make it bigger */
             size = (size_t)(size * 1.5);
-            buf  = REALLOCF(buf, size);
+            buf  = REALLOC(buf, size);
             if (buf == NULL)
             {
                 LOG_ERROR("FATAL: out of memory");

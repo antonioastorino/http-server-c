@@ -33,7 +33,7 @@ String String_new(const char* format, ...)
     // Allocate twice the required length
     size_t allocated_size = (size_t)(actual_size * SIZE_FACTOR);
     // printf("Allocated size: %zu\n", allocated_size);
-    tmp_str_p             = (char*)REALLOCF(tmp_str_p, sizeof(char) * allocated_size);
+    tmp_str_p             = (char*)REALLOC(tmp_str_p, sizeof(char) * allocated_size);
     LOG_TRACE("Created string.")
     va_end(args);
     // Set the `.len` parameter as the length of the string, excluding the terminating '\0'.
@@ -245,7 +245,7 @@ Error String_replace_pattern(
     {
         // Increase the allocated size.
         haystack_string_p->size = (size_t)(new_string_length * SIZE_FACTOR);
-        haystack_string_p->str  = (char*)REALLOCF(haystack_string_p->str, haystack_string_p->size);
+        haystack_string_p->str  = (char*)REALLOC(haystack_string_p->str, haystack_string_p->size);
     }
     haystack_string_p->length = new_string_length;
     // Copy an extra byte for the NULL characther.

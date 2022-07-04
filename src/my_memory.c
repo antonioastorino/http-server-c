@@ -38,9 +38,9 @@ void* custom_malloc(size_t size, const char* file, const int line)
     return ptr;
 }
 
-void* custom_reallocf(void* ptr, size_t size, const char* file, const int line)
+void* custom_realloc(void* ptr, size_t size, const char* file, const int line)
 {
-    void* new_ptr = reallocf(ptr, size);
+    void* new_ptr = realloc(ptr, size);
     if (new_ptr != ptr)
     {
         // Realloc, when creating a new pointer, frees the old one.
