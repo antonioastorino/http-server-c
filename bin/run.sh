@@ -48,7 +48,7 @@ if ! [ "${PID}" = "" ]; then
     echo $PID
     kill ${PID}
 else
-    echo "No process was runnig."
+    echo "No process was running."
 fi
 
 if ! [ -f "${MAKE_FILE}" ]; then
@@ -64,7 +64,7 @@ if [ "${MODE}" = "TEST" ] || [ "${MODE}" = "DEBUG" ]; then
     mkdir -p "${ARTIFACT_FOLDER}/empty/" \
         "${ARTIFACT_FOLDER}/non-empty/inner/inner_l2" \
         "${ARTIFACT_FOLDER}/non-empty-0/inner/inner_l2" \
-        "${ARTIFACT_FOLDER}/empty-0" \
+        "${ARTIFACT_FOLDER}/empty-0"
 
     touch "${ARTIFACT_FOLDER}/non-empty/inner/file.txt"
     touch "${ARTIFACT_FOLDER}/non-empty/inner/inner_l2/file.txt"

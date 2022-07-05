@@ -15,3 +15,6 @@ FRAMEWORKS=""
 
 HEADER_PATHS=("include")
 SRC_PATHS=("src")
+if [ "$(uname -s)" = "Linux" ]; then
+    FLAGS="${FLAGS} -D_BSD_SOURCE -D_DEFAULT_SOURCE -D_GNU_SOURCE"
+fi

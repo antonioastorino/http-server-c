@@ -96,7 +96,7 @@ int main(int argc, const char* argv[])
                 return -1;
             }
             printf("Client socket: %d - bytes %d\n", client_socket, bytes_recv);
-            //            printf("%s\n", in_buff);
+            printf("%s\n", in_buff);
             HttpReqObj req_obj;
             Error ret_res = HttpReqObj_new(in_buff, &req_obj);
             if (ret_res == ERR_ALL_GOOD)

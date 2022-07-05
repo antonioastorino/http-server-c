@@ -3,6 +3,10 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#ifdef __linux__
+#include <sys/sendfile.h>
+#endif /* __linux__ */
+#include <sys/types.h>
 #include <unistd.h>
 #define ASSETS_DIR "assets"
 
@@ -81,13 +85,17 @@ Error HttpReqObj_handle(HttpReqObj* http_req_obj_p, int client_socket)
             printf("Error opening file\n");
             return ERR_UNDEFINED;
         }
+#ifdef __linux__
+        int res = sendfile(resource_file, client_socket, &len, 0);
+#else
         int res = sendfile(resource_file, client_socket, 0, &len, NULL, 0);
+#endif
         if (res == -1)
         {
             perror("Failed to send file");
             return -1;
         }
-        printf("Bytes sent: %lld\n", len);
+        printf("Bytes sent: %ld\n", (long)len);
         printf("Bytes size: %ld\n", file_size);
         close(resource_file);
         break;
