@@ -41,6 +41,7 @@ set +e
 echo "${BD}/test/artifacts"
 /bin/rm -rf "${BD}/test/artifacts"
 /bin/rm -rf /tmp/pointers/*
+/bin/rm -rf ${ARTIFACT_FOLDER}
 
 PID=$(pgrep ${APP_NAME})
 set -e
@@ -59,8 +60,8 @@ fi
 
 echo "Running"
 if [ "${MODE}" = "TEST" ] || [ "${MODE}" = "DEBUG" ]; then
+    mkdir -p /tmp/pointers
     # Set up dir entries for testing.
-    /bin/rm -rf ${ARTIFACT_FOLDER}
     mkdir -p "${ARTIFACT_FOLDER}/empty/" \
         "${ARTIFACT_FOLDER}/non-empty/inner/inner_l2" \
         "${ARTIFACT_FOLDER}/non-empty-0/inner/inner_l2" \

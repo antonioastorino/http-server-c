@@ -1,5 +1,6 @@
 #ifndef ERROR_H
 #define ERROR_H
+
 typedef enum Error
 {
     ERR_ALL_GOOD,
@@ -23,17 +24,5 @@ typedef enum Error
     ERR_NOT_FOUND,
     ERR_FATAL,
 } Error;
-
-#define return_on_err(_expr)                                                                       \
-    {                                                                                              \
-        Error _res = _expr;                                                                        \
-        if (_res != ERR_ALL_GOOD)                                                                  \
-        {                                                                                          \
-            LOG_WARNING("Error propagated from here.");                                            \
-            return _res;                                                                           \
-        }                                                                                          \
-    }
-
-#define is_err(_expr) (_expr != ERR_ALL_GOOD)
 
 #endif /* ERROR_H */

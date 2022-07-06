@@ -13,7 +13,7 @@ void create_file(void* pointer, const char* file, const int line)
     FILE* fh = fopen(file_name, "wx");
     if (!fh)
     {
-        fprintf(stderr, "Cannot create %p file", pointer);
+        LOG_ERROR("Cannot create %p file", pointer);
         exit(errno);
     }
     fprintf(fh, "%s:%d", file, line);

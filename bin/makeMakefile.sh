@@ -81,7 +81,6 @@ pf "\nall: setup"
 pf "\n"
 
 pf "\nsetup:"
-pf "\n\t@/bin/rm -rf ${APP_NAME}"
 pf "\n\t@mkdir -p \\"
 pf "\n\t${BUILD_DIR}"
 
@@ -127,8 +126,8 @@ while read -r SRC_FULL_PATH; do
     HEADER_FILES=($(egrep "^#include|^#import" "${SRC_FULL_PATH}" | grep -v "<" | awk -F '"' '{print $2}'))
     if ! [ "${CORR_HEADER}" = "" ]; then
         HEADER_FILES+=($(egrep "^#include|^#import" "${CORR_HEADER}" | grep -v "<" | awk -F '"' '{print $2}'))
-        UNIQUE_HEADER_FILES=($(for H in "${HEADER_FILES[@]}"; do echo "${H}"; done | sort -u))
     fi
+    UNIQUE_HEADER_FILES=($(for H in "${HEADER_FILES[@]}"; do echo "${H}"; done | sort -u))
 
     echo "Adding as dependencies header files and corresponding source files found in"
     echo " - ${SRC_FULL_PATH}"
