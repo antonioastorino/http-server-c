@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 // Private.
@@ -258,26 +257,33 @@ Error _fs_utils_recursive_rm_r(FTS* fts_p, const char* dir_path_char_p)
         }
     }
     // The recursion is over. Delete what you found.
-    if (dir_entry_p->fts_info == FTS_D)
+    struct stat st;
+    if (lstat(dir_path_char_p, &st) == -1)
     {
+        LOG_ERROR("%s", strerror(errno));
+        return ERR_FS_INTERNAL;
+    }
+    switch (st.st_mode & S_IFMT)
+    {
+    case S_IFDIR:
         LOG_TRACE("Trying to delete folder `%s`", dir_path_char_p);
         ret_res = fs_utils_rmdir(dir_path_char_p);
         return_on_err(ret_res);
-    }
-    else if (dir_entry_p->fts_info == FTS_F)
-    {
+        break;
+    case S_IFREG:
         LOG_TRACE("Trying to delete file `%s`", dir_path_char_p);
         if (unlink(dir_path_char_p))
         {
             LOG_ERROR("Removal failed with errno: %d.", errno);
             ret_res = ERR_FS_INTERNAL;
         }
+        break;
+    default:
+        LOG_ERROR("Unsupported or forbidden removal of file type `%d`", st.st_mode & S_IFMT);
+        ret_res = ERR_INVALID;
+        break;
     }
-    else
-    {
-        LOG_ERROR("This should not happen: file type: %d", dir_entry_p->fts_info);
-        exit(1);
-    }
+
     return ret_res;
 }
 
