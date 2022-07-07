@@ -29,15 +29,17 @@
 
 #if LOG_LEVEL > LEVEL_NO_LOGS
 #define PRINT_SEPARATOR() printf("--------" __TIMESTAMP__ "--------\n")
+#define DATE_TIME_STR_LEN 26
 void get_date_time(char* date_time_str);
 #else
+#define get_date_time(something)
 #define PRINT_SEPARATOR()
 #endif
 
 #if LOG_LEVEL >= LEVEL_ERROR
 #define LOG_ERROR(...)                                                                             \
     {                                                                                              \
-        char date_time_str[25];                                                                    \
+        char date_time_str[DATE_TIME_STR_LEN];                                                     \
         get_date_time(date_time_str);                                                              \
         fprintf(log_err, "[ERROR] %s %s:%d", date_time_str, __FILENAME__, __LINE__);               \
         fprintf(log_err, " | " __VA_ARGS__);                                                       \
@@ -50,7 +52,7 @@ void get_date_time(char* date_time_str);
 #if LOG_LEVEL >= LEVEL_WARNING
 #define LOG_WARNING(...)                                                                           \
     {                                                                                              \
-        char date_time_str[25];                                                                    \
+        char date_time_str[DATE_TIME_STR_LEN];                                                     \
         get_date_time(date_time_str);                                                              \
         fprintf(log_err, "[WARN ] %s %s:%d", date_time_str, __FILENAME__, __LINE__);               \
         fprintf(log_err, " | " __VA_ARGS__);                                                       \
@@ -63,7 +65,7 @@ void get_date_time(char* date_time_str);
 #if LOG_LEVEL >= LEVEL_INFO
 #define LOG_INFO(...)                                                                              \
     {                                                                                              \
-        char date_time_str[25];                                                                    \
+        char date_time_str[DATE_TIME_STR_LEN];                                                     \
         get_date_time(date_time_str);                                                              \
         printf("[TNFO ] %s %s:%d", date_time_str, __FILENAME__, __LINE__);                         \
         printf(" | " __VA_ARGS__);                                                                 \
@@ -76,7 +78,7 @@ void get_date_time(char* date_time_str);
 #if LOG_LEVEL >= LEVEL_DEBUG
 #define LOG_DEBUG(...)                                                                             \
     {                                                                                              \
-        char date_time_str[25];                                                                    \
+        char date_time_str[DATE_TIME_STR_LEN];                                                     \
         get_date_time(date_time_str);                                                              \
         printf("[DEBUG] %s %s:%d", date_time_str, __FILENAME__, __LINE__);                         \
         printf(" | " __VA_ARGS__);                                                                 \
@@ -89,7 +91,7 @@ void get_date_time(char* date_time_str);
 #if LOG_LEVEL >= LEVEL_TRACE
 #define LOG_TRACE(...)                                                                             \
     {                                                                                              \
-        char date_time_str[25];                                                                    \
+        char date_time_str[DATE_TIME_STR_LEN];                                                     \
         get_date_time(date_time_str);                                                              \
         printf("[TRACE] %s %s:%d", date_time_str, __FILENAME__, __LINE__);                         \
         printf(" | " __VA_ARGS__);                                                                 \

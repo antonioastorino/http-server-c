@@ -47,7 +47,7 @@ Error _fs_utils_create_or_append(
 /* ------------------------------------------ Folders ------------------------------------------- */
 Error fs_utils_mkdir(const char* dir_path_char_p, mode_t permission)
 {
-    Error ret_res   = ERR_ALL_GOOD;
+    Error ret_res = ERR_ALL_GOOD;
     // Save the current mode mask and reset the mask.
     mode_t old_mask = umask(0);
     if (!_fs_utils_does_exist(dir_path_char_p))
@@ -88,7 +88,7 @@ Error fs_utils_mkdir_p(const char* dir_path_char_p, mode_t permission)
     {
         partial_path[0] = '/';
         // Skip the fist folder found (root folder) in the path - it's an absolute path.
-        start_index     = 1;
+        start_index = 1;
     }
     for (size_t i = start_index; i < path_length; i++)
     {
@@ -144,7 +144,7 @@ Error fs_utils_rm_from_path_as_char_p(const char* file_path_char_p)
     char* paths[2] = {(char*)file_path_char_p, NULL};
 
     // Create the received path handle.
-    FTS* fts_p     = fts_open(paths, FTS_PHYSICAL | FTS_NOCHDIR, NULL);
+    FTS* fts_p = fts_open(paths, FTS_PHYSICAL | FTS_NOCHDIR, NULL);
     if (fts_p == NULL)
     {
         LOG_ERROR("Failed to initialize fts. errno: `%d`", errno);
@@ -155,7 +155,7 @@ Error fs_utils_rm_from_path_as_char_p(const char* file_path_char_p)
       found it.
       */
     FTSENT* dir_entry_p = fts_read(fts_p);
-    if (dir_entry_p->fts_info & FTS_F)
+    if (dir_entry_p->fts_info == FTS_F)
     {
         // It is a file.
         if (unlink(file_path_char_p))
@@ -229,13 +229,15 @@ Error _fs_utils_read_to_string(const char* file_path_char_p, String* out_string_
 /* ------------------------------------- Files and folders -------------------------------------- */
 Error _fs_utils_recursive_rm_r(FTS* fts_p, const char* dir_path_char_p)
 {
-    Error ret_res       = ERR_ALL_GOOD;
+    Error ret_res = ERR_ALL_GOOD;
     /*
     Get next entry (could be file or directory). No need to check for ENOENT because we just found
     it.
     */
+    LOG_TRACE("Reached %s", dir_path_char_p);
     FTSENT* dir_entry_p = fts_read(fts_p);
-    if (dir_entry_p->fts_info & FTS_D)
+    LOG_TRACE("Info code %d", dir_entry_p->fts_info);
+    if (dir_entry_p->fts_info == FTS_D)
     {
         // We are inside a directory - recurse;
         FTSENT* children = fts_children(fts_p, 0);
@@ -256,13 +258,13 @@ Error _fs_utils_recursive_rm_r(FTS* fts_p, const char* dir_path_char_p)
         }
     }
     // The recursion is over. Delete what you found.
-    if (dir_entry_p->fts_info & FTS_D)
+    if (dir_entry_p->fts_info == FTS_D)
     {
         LOG_TRACE("Trying to delete folder `%s`", dir_path_char_p);
         ret_res = fs_utils_rmdir(dir_path_char_p);
         return_on_err(ret_res);
     }
-    else if (dir_entry_p->fts_info & FTS_F)
+    else if (dir_entry_p->fts_info == FTS_F)
     {
         LOG_TRACE("Trying to delete file `%s`", dir_path_char_p);
         if (unlink(dir_path_char_p))
@@ -270,6 +272,11 @@ Error _fs_utils_recursive_rm_r(FTS* fts_p, const char* dir_path_char_p)
             LOG_ERROR("Removal failed with errno: %d.", errno);
             ret_res = ERR_FS_INTERNAL;
         }
+    }
+    else
+    {
+        LOG_ERROR("This should not happen: file type: %d", dir_entry_p->fts_info);
+        exit(1);
     }
     return ret_res;
 }
@@ -284,7 +291,7 @@ Error fs_utils_rm_r(const char* dir_path_char_p)
     }
     char* paths[] = {(char*)dir_path_char_p, NULL};
     // Create the received path handle.
-    FTS* fts_p    = fts_open(paths, FTS_PHYSICAL | FTS_NOCHDIR, NULL);
+    FTS* fts_p = fts_open(paths, FTS_PHYSICAL | FTS_NOCHDIR, NULL);
     if (fts_p == NULL)
     {
         LOG_ERROR("Failed to initialize fts. errno `%d`.", errno);

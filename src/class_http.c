@@ -13,6 +13,7 @@
 Error HttpReqObj_new(const char* raw_request, HttpReqObj* out_http_req_obj)
 {
     // Split the raw data into header and body.
+    printf("%s\n", raw_request);
     StringArray raw_data_string_array_obj = StringArray_new(raw_request, "\r\n\r\n");
     LOG_INFO("Elements in the array: `%lu`", raw_data_string_array_obj.num_of_elements);
     if (raw_data_string_array_obj.num_of_elements < 2)

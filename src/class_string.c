@@ -29,11 +29,11 @@ String String_new(const char* format, ...)
         LOG_ERROR("Out of memory", errno)
         exit(ERR_NULL);
     }
-    size_t actual_size    = strlen(tmp_str_p);
+    size_t actual_size = strlen(tmp_str_p);
     // Allocate twice the required length
     size_t allocated_size = (size_t)(actual_size * SIZE_FACTOR);
     // printf("Allocated size: %zu\n", allocated_size);
-    tmp_str_p             = (char*)REALLOC(tmp_str_p, sizeof(char) * allocated_size);
+    tmp_str_p = (char*)REALLOC(tmp_str_p, sizeof(char) * allocated_size);
     LOG_TRACE("Created string.")
     va_end(args);
     // Set the `.len` parameter as the length of the string, excluding the terminating '\0'.
@@ -154,7 +154,7 @@ Error String_replace_char(
         i++;
     }
     // Terminate.
-    tmp_str[j]                = '\0';
+    tmp_str[j] = '\0';
     // Update the string length in case some chars were removed.
     haystack_string_p->length = j;
     strncpy(haystack_string_p->str, tmp_str, j + 1);
@@ -200,7 +200,7 @@ Error String_replace_pattern(
     int oldWlen = strlen(needle);
     int newWlen = strlen(replacement);
     size_t i;
-    size_t cnt    = 0;
+    size_t cnt = 0;
 
     // Counting the number of times old word occur in the string
     const char* s = haystack_string_p->str;
@@ -226,7 +226,7 @@ Error String_replace_pattern(
     char* result_char_p              = (char*)MALLOC(new_string_length + 1);
     result_char_p[new_string_length] = 0;
 
-    i                                = 0;
+    i = 0;
     while (*s)
     {
         // compare the substring with the result
@@ -254,7 +254,7 @@ Error String_replace_pattern(
     FREE(result_char_p);
     result_char_p = NULL;
 
-    *out_count    = cnt;
+    *out_count = cnt;
     return ERR_ALL_GOOD;
 }
 
@@ -293,7 +293,7 @@ Error String_between_patterns_in_char_p(
     }
     char* tmp = (char*)MALLOC(end - start + 1);
     memcpy(tmp, start, end - start);
-    tmp[end - start]   = '\0';
+    tmp[end - start] = '\0';
 
     (*out_string_obj_p) = String_new(tmp);
     FREE(tmp);
@@ -317,7 +317,7 @@ void test_class_string()
 
     PRINT_TEST_TITLE("New from string")
     {
-        const char* str       = "Hello everybody";
+        const char* str    = "Hello everybody";
         String test_string = String_new(str);
         ASSERT_EQ(test_string.length, strlen(str), "Length correct.");
         ASSERT_EQ(test_string.size, (size_t)(strlen(str) * 1.5), "Size correct.");
@@ -328,7 +328,7 @@ void test_class_string()
     PRINT_TEST_TITLE("New from formatter");
     {
         const char* format1   = "Old string content.";
-        String test_string = String_new(format1);
+        String test_string    = String_new(format1);
         size_t initial_length = strlen(test_string.str);
         size_t initial_size   = (size_t)(initial_length * 1.5);
         ASSERT_EQ(test_string.length, initial_length, "Length correct.");
@@ -340,12 +340,9 @@ void test_class_string()
         String test_string = String_new("Old string content.");
         ASSERT_EQ(
             String_starts_with(&test_string, "Old string"), true, "starts_with() works when true");
+        ASSERT_EQ(String_starts_with(&test_string, "new"), false, "starts_with() works when false");
         ASSERT_EQ(
-            String_starts_with(&test_string, "new"), false, "starts_with() works when false");
-        ASSERT_EQ(
-            String_starts_with(&test_string, ""),
-            true,
-            "starts_with() works when needle is empty");
+            String_starts_with(&test_string, ""), true, "starts_with() works when needle is empty");
         String_destroy(&test_string);
     }
 
@@ -353,8 +350,8 @@ void test_class_string()
     {
         String test_origin = String_new("Original");
         String test_clone  = String_clone(&test_origin);
-        size_t length       = test_origin.length;
-        size_t size         = test_origin.size;
+        size_t length      = test_origin.length;
+        size_t size        = test_origin.size;
         ASSERT_EQ(test_origin.str, test_clone.str, "Strings match.");
         String_destroy(&test_origin); // The clone should still be alive.
         ASSERT_EQ(length, test_clone.length, "Size copied");
@@ -382,8 +379,7 @@ void test_class_string()
         ASSERT(
             String_replace_char(&test_string, '&', '^', &num_of_replacements) == ERR_ALL_GOOD,
             "Replacement successful");
-        ASSERT_EQ(
-            test_string.str, "Some_ex__obemodified.", "String unchanged - needle not found.");
+        ASSERT_EQ(test_string.str, "Some_ex__obemodified.", "String unchanged - needle not found.");
         ASSERT_EQ(num_of_replacements, 0, "No replacements counted correctly.");
         _String_println(&test_string);
 
@@ -484,8 +480,7 @@ void test_class_string()
         String test_string = String_new("This pattern contains \\r\\n to be replaced");
         String_replace_pattern_with_format(
             &test_string, "\\r\\n", "%lu", (size_t)1003, &num_of_replacements);
-        ASSERT_EQ(
-            "This pattern contains 1003 to be replaced", test_string.str, "Pattern replaced");
+        ASSERT_EQ("This pattern contains 1003 to be replaced", test_string.str, "Pattern replaced");
         ASSERT_EQ(num_of_replacements, 1, "Number of replacements counted correctly.");
         String_destroy(&test_string);
     }
@@ -520,8 +515,8 @@ void test_class_string()
     PRINT_TEST_TITLE("Pattern not replaced because missing");
     {
         size_t num_of_replacements;
-        String test_string = String_new("This string does not contain a pattern to be replaced");
-        num_of_replacements   = String_replace_pattern(
+        String test_string  = String_new("This string does not contain a pattern to be replaced");
+        num_of_replacements = String_replace_pattern(
             &test_string,
             "missing pattern",
             "HELLO WORLD! This is the replacement pattern",
@@ -536,14 +531,14 @@ void test_class_string()
     PRINT_TEST_TITLE("Trying to join an empty array");
     {
         const char* char_array[] = {NULL};
-        String test_string    = String_join(char_array, "hello");
+        String test_string       = String_join(char_array, "hello");
         ASSERT(test_string.str == NULL, "No string created");
     }
 
     PRINT_TEST_TITLE("Join with 1 element");
     {
         const char* one_element_array[] = {"element 1", NULL};
-        String test_string           = String_join(one_element_array, "hello");
+        String test_string              = String_join(one_element_array, "hello");
         ASSERT_EQ(test_string.str, "element 1", "No concatenation performed");
         String_destroy(&test_string);
     }
@@ -551,14 +546,14 @@ void test_class_string()
     PRINT_TEST_TITLE("Join with 2 elements");
     {
         const char* two_element_array[] = {"element 1", "element 2", NULL};
-        String test_string           = String_join(two_element_array, "|||");
+        String test_string              = String_join(two_element_array, "|||");
         ASSERT_EQ(test_string.str, "element 1|||element 2", "Concatenation correct");
         String_destroy(&test_string);
     }
     PRINT_TEST_TITLE("Join with empty separator");
     {
         const char* foo_bar_element_array[] = {"F", "O", "O", "B", "A", "R", NULL};
-        String test_string               = String_join(foo_bar_element_array, "");
+        String test_string                  = String_join(foo_bar_element_array, "");
         ASSERT_EQ(test_string.str, "FOOBAR", "Concatenation correct");
         String_destroy(&test_string);
     }

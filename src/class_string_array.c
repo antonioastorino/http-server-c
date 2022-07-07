@@ -18,10 +18,11 @@ StringArray StringArray_new(const char* input_char_p, const char* pattern_char_p
     int pattern_length = strlen(pattern_char_p);
 
     // Counting the number of times patter occurs in the string
-    const char* s      = input_char_p;
+    const char* curr_char_p = input_char_p;
+    printf("Before:%s\n", curr_char_p);
     for (i = 0; i < origin_size; i++)
     {
-        if (strstr(&s[i], pattern_char_p) == &s[i])
+        if (strstr(&curr_char_p[i], pattern_char_p) == &curr_char_p[i])
         {
             cnt++;
 
@@ -29,7 +30,8 @@ StringArray StringArray_new(const char* input_char_p, const char* pattern_char_p
             i += pattern_length - 1;
         }
     }
-    LOG_TRACE("Found %lu occurrencies of the pattern `%s`", cnt, pattern_char_p);
+    LOG_TRACE("Found %lu occurrences of the pattern `%s`", cnt, pattern_char_p);
+    printf("After:%s\n", curr_char_p);
 
     // Making new string of enough length
     size_t new_string_length         = i + cnt * (1 - pattern_length);
@@ -39,25 +41,27 @@ StringArray StringArray_new(const char* input_char_p, const char* pattern_char_p
     pointers[0] always points to the beginning of the string. The others point to the next split.
     pointers[last] points to NULL;
     */
-    char** pointers                  = (char**)MALLOC(sizeof(char*) * (cnt + 2));
-    pointers[0]                      = result_char_p;
-    pointers[cnt + 1]                = NULL;
+    char** pointers   = (char**)MALLOC(sizeof(char*) * (cnt + 2));
+    pointers[0]       = result_char_p;
+    pointers[cnt + 1] = NULL;
 
-    i                                = 0;
-    size_t counter                   = 0;
-    while (*s)
+    i              = 0;
+    size_t counter = 0;
+    while (*curr_char_p != 0)
     {
         // compare the substring with the result
-        if (strstr(s, pattern_char_p) == s)
+        if (strstr(curr_char_p, pattern_char_p) == curr_char_p)
         {
             // Place terminator and add a pointer to next character
             result_char_p[i]    = '\0';
             pointers[++counter] = &result_char_p[i + 1];
             i += 1;
-            s += pattern_length;
+            curr_char_p += pattern_length;
         }
         else
-            result_char_p[i++] = *s++;
+        {
+            result_char_p[i++] = *curr_char_p++;
+        }
     }
 
     ret_string_array.str_char_p       = result_char_p;
