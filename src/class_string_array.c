@@ -19,7 +19,6 @@ StringArray StringArray_new(const char* input_char_p, const char* pattern_char_p
 
     // Counting the number of times patter occurs in the string
     const char* curr_char_p = input_char_p;
-    printf("Before:%s\n", curr_char_p);
     for (i = 0; i < origin_size; i++)
     {
         if (strstr(&curr_char_p[i], pattern_char_p) == &curr_char_p[i])
@@ -31,7 +30,6 @@ StringArray StringArray_new(const char* input_char_p, const char* pattern_char_p
         }
     }
     LOG_TRACE("Found %lu occurrences of the pattern `%s`", cnt, pattern_char_p);
-    printf("After:%s\n", curr_char_p);
 
     // Making new string of enough length
     size_t new_string_length         = i + cnt * (1 - pattern_length);

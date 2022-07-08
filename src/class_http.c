@@ -1,19 +1,20 @@
 #include "class_http.h"
 #include "class_string_array.h"
+#include <errno.h>
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <unistd.h>
+
 #ifdef __linux__
 #include <sys/sendfile.h>
 #endif /* __linux__ */
-#include <sys/types.h>
-#include <unistd.h>
+
 #define ASSETS_DIR "assets"
 
 Error HttpReqObj_new(const char* raw_request, HttpReqObj* out_http_req_obj)
 {
     // Split the raw data into header and body.
-    printf("%s\n", raw_request);
     StringArray raw_data_string_array_obj = StringArray_new(raw_request, "\r\n\r\n");
     LOG_INFO("Elements in the array: `%lu`", raw_data_string_array_obj.num_of_elements);
     if (raw_data_string_array_obj.num_of_elements < 2)
@@ -71,33 +72,39 @@ Error HttpReqObj_handle(HttpReqObj* http_req_obj_p, int client_socket)
         {
             sprintf(assets_path, "%s%s", ASSETS_DIR, http_req_obj_p->header.location);
         }
-        FILE* assets_file = fopen(assets_path, "r");
-        fseek(assets_file, 0L, SEEK_END);
-        long file_size = ftell(assets_file);
-        fclose(assets_file);
         char out_buff[1024];
         sprintf(out_buff, "HTTP/1.0 200 OK\r\n\r\n");
         write(client_socket, (char*)out_buff, strlen((char*)out_buff));
         LOG_INFO("Looking for resource at `%s`", assets_path);
-        off_t len         = 0; // set to 0 will send all the origin file
         int resource_file = open(assets_path, O_RDONLY);
         if (resource_file == -1)
         {
-            printf("Error opening file\n");
+            LOG_PERROR("Error opening file");
             return ERR_UNDEFINED;
         }
 #ifdef __linux__
-        int res = sendfile(resource_file, client_socket, &len, 0);
-#else
-        int res = sendfile(resource_file, client_socket, 0, &len, NULL, 0);
-#endif
-        if (res == -1)
+        FILE* assets_file = fopen(assets_path, "r");
+        if (fseek(assets_file, 0L, SEEK_END) == -1)
         {
-            perror("Failed to send file");
+            LOG_PERROR("fseek failed");
+            return ERR_HTTP_INTERNAL;
+        }
+        long file_size = ftell(assets_file);
+        fclose(assets_file);
+        ssize_t bytes_sent = sendfile(client_socket, resource_file, NULL, file_size);
+        LOG_INFO("Size `%ld` bytes.", file_size);
+        LOG_INFO("Sent `%ld` bytes.", bytes_sent);
+        if (bytes_sent == -1)
+#else
+        off_t len = 0; // set to 0 will send all the origin file
+        int res   = sendfile(resource_file, client_socket, 0, &len, NULL, 0);
+        LOG_INFO("Sent `%lld` bytes.", len);
+        if (res == -1)
+#endif
+        {
+            LOG_PERROR("Failed to send file");
             return -1;
         }
-        printf("Bytes sent: %ld\n", (long)len);
-        printf("Bytes size: %ld\n", file_size);
         close(resource_file);
         break;
     }

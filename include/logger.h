@@ -45,6 +45,20 @@ void get_date_time(char* date_time_str);
         fprintf(log_err, " | " __VA_ARGS__);                                                       \
         fprintf(log_err, "\n");                                                                    \
     }
+#define LOG_PERROR(...)                                                                            \
+    {                                                                                              \
+        char date_time_str[DATE_TIME_STR_LEN];                                                     \
+        get_date_time(date_time_str);                                                              \
+        fprintf(                                                                                   \
+            log_err,                                                                               \
+            "[ERROR] %s %s:%d `%s`",                                                               \
+            date_time_str,                                                                         \
+            __FILENAME__,                                                                          \
+            __LINE__,                                                                              \
+            strerror(errno));                                                                      \
+        fprintf(log_err, " | " __VA_ARGS__);                                                       \
+        fprintf(log_err, "\n");                                                                    \
+    }
 #else
 #define LOG_ERROR(...)
 #endif

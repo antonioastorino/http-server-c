@@ -21,6 +21,7 @@ typedef enum Error
     ERR_JSON_MISSING_ENTRY,
     ERR_TYPE_MISMATCH,
     ERR_FS_INTERNAL,
+    ERR_HTTP_INTERNAL,
     ERR_NOT_FOUND,
     ERR_FATAL,
 } Error;
