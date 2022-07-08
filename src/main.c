@@ -5,17 +5,39 @@
 #include "common.h"
 #include "converter.h"
 #include "fs_utils.h"
+#include <signal.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #define MAX_MSG_LEN 512
+
+void* watchdog(void* pid_p)
+{
+    pid_t pid = *((pid_t*)pid_p);
+    LOG_TRACE("Waiting for child `%d` to finish", pid);
+    sleep(HTTP_REQ_TIMEOUT);
+    LOG_TRACE("Checking");
+    int process_exit_status;
+    if (waitpid(pid, &process_exit_status, WNOHANG) == 0)
+    {
+        LOG_WARNING("The process with ID `%d` is not done yet. Killing it.", pid);
+        kill(pid, SIGTERM);
+    }
+    else
+    {
+        LOG_TRACE("Child done. Exited with status `%d`.", WEXITSTATUS(process_exit_status));
+    }
+    pthread_exit(NULL);
+}
 
 #if TEST == 0
 int main(int argc, const char* argv[])
@@ -26,7 +48,7 @@ int main(int argc, const char* argv[])
         return -1;
     }
 
-    printf("Server running\n");
+    LOG_INFO("Server running\n");
 
     const int domain   = AF_INET; // (= PF_INET) Internet domain sockets for use with IPv4 addresses
     const int type     = SOCK_STREAM; // bitstream socket used in TCP
@@ -34,10 +56,10 @@ int main(int argc, const char* argv[])
     int on             = 1;
 
     // create a socket
-    int server_socket  = socket(domain, type, protocol);
+    int server_socket = socket(domain, type, protocol);
     if (server_socket == -1)
     {
-        printf("Failed to create socket\n");
+        LOG_ERROR("Failed to create socket\n");
         return -1;
     }
 
@@ -53,14 +75,14 @@ int main(int argc, const char* argv[])
 
     if (bind_status == -1)
     {
-        printf("Failed to bind to network socket\n");
+        LOG_ERROR("Failed to bind to network socket\n");
         return -1;
     }
 
     // listen to connections
     if (listen(server_socket, SOMAXCONN) == -1)
     {
-        printf("Failed to listen to socket\n");
+        LOG_ERROR("Failed to listen to socket\n");
         return -1;
     }
     struct sockaddr_in client;
@@ -72,11 +94,12 @@ int main(int argc, const char* argv[])
 
         if (client_socket == -1)
         {
-            printf("Problem with client connecting\n");
+            LOG_ERROR("Problem with client connecting\n");
             continue;
         }
 
-        if (!fork())
+        int pid = fork();
+        if (pid == 0)
         {
             // Child process
             close(server_socket);
@@ -114,8 +137,14 @@ int main(int argc, const char* argv[])
         else
         {
             // Parent process
-            printf("[PARENT] Connection to socket nr. %d accepted.\n", client_socket);
             close(client_socket);
+            LOG_INFO("[PARENT] Connection to socket nr. %d accepted.\n", client_socket);
+            pthread_t t1;
+            if (pthread_create(&t1, NULL, watchdog, &pid) == -1)
+            {
+                LOG_ERROR("Failed to create request watchdog. Killing PID `%d`", pid);
+                kill(pid, SIGKILL);
+            }
         }
     }
 

@@ -4,6 +4,8 @@
 #include "common.h"
 #include "http_header.h"
 
+#define HTTP_REQ_TIMEOUT (5)
+
 typedef struct
 {
     HttpReqHeader header;

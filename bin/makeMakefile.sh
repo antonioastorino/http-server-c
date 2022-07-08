@@ -48,6 +48,9 @@ for LIB_FOUND in ${ALL_LIBS[@]}; do
     thread)
         LIB="$LIB -pthread"
         ;;
+    pthread.h)
+        LIB="$LIB -pthread"
+        ;;
     curl/curl.h)
         LIB="$LIB -lcurl"
         ;;

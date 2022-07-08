@@ -1,6 +1,7 @@
 lfs
 build
 *.swp
+*.swo
 *.bak
 test/artifacts 
 Makefile
