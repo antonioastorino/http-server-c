@@ -13,10 +13,6 @@
 
 #define ASSETS_DIR "assets"
 
-typedef struct {
-    
-    HttpVersion version;
-} HttpRespHeader;
 
 Error HttpReqObj_new(const char* raw_request, HttpReqObj* out_http_req_obj)
 {

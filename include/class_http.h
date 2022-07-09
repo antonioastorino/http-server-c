@@ -3,6 +3,7 @@
 #include "class_string.h"
 #include "common.h"
 #include "http_req_header.h"
+#include "http_resp_header.h"
 
 #define HTTP_REQ_TIMEOUT (5)
 
@@ -11,6 +12,12 @@ typedef struct
     HttpReqHeader header;
     String body_string_obj;
 } HttpReqObj;
+
+typedef struct
+{
+    HttpRespHeader header;
+    char* path_to_data;
+} HttpRespObj;
 
 Error HttpReqObj_new(const char*, HttpReqObj*);
 Error HttpReqObj_destroy(HttpReqObj*);

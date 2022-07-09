@@ -138,7 +138,7 @@ void test_http_req_header()
             = http_req_header_init("GET /requested/path HTTP/1.1\r\n", &http_req_header_obj);
         ASSERT(ret_res == ERR_ALL_GOOD, "Initialization successful.");
         ASSERT(http_req_header_obj.method == METHOD_GET, "Method found.");
-        ASSERT(strcmp(http_req_header_obj.location, "/requested/path") == 0, "Path saved.");
+        ASSERT_EQ(http_req_header_obj.location, "/requested/path", "Path saved.");
         ASSERT(http_req_header_obj.version == VERSION_VALID, "Version saved.");
     }
     PRINT_TEST_TITLE("Populate header - no version");
@@ -147,8 +147,7 @@ void test_http_req_header()
         Error ret_res = http_req_header_init("GET /requested/path\r\n", &http_req_header_obj);
         ASSERT(ret_res == ERR_ALL_GOOD, "Initialization successful.");
         ASSERT(http_req_header_obj.method == METHOD_GET, "Method found.");
-        printf("Path: %d\n", strcmp(http_req_header_obj.location, "/requested/path"));
-        ASSERT(strcmp(http_req_header_obj.location, "/requested/path") == 0, "Path saved.");
+        ASSERT_EQ(http_req_header_obj.location, "/requested/path", "Path saved.");
         ASSERT(http_req_header_obj.version == VERSION_UNKNOWN, "Version not found.");
     }
     /*
@@ -159,14 +158,14 @@ void test_http_req_header()
         ASSERT(
             http_req_header_init("GET\r\n", &http_req_header_obj) == ERR_INVALID, "Missing path.");
         ASSERT(http_req_header_obj.method == METHOD_UNKNOWN, "Unknown method set.");
-        ASSERT(strcmp(http_req_header_obj.location, "\0") == 0, "Path not set.");
+        ASSERT_EQ(http_req_header_obj.location, "\0", "Path not set.");
         ASSERT(http_req_header_obj.version == VERSION_UNKNOWN, "Version set to UNKNOWN.");
 
         ASSERT(
             http_req_header_init("\r\n", &http_req_header_obj) == ERR_INVALID,
             "Empty header handled.");
         ASSERT(http_req_header_obj.method == METHOD_UNKNOWN, "Unknown method set.");
-        ASSERT(strcmp(http_req_header_obj.location, "\0") == 0, "Path not set.");
+        ASSERT_EQ(http_req_header_obj.location, "\0", "Path not set.");
         ASSERT(http_req_header_obj.version == VERSION_UNKNOWN, "Version set to UNKNOWN.");
     }
 }

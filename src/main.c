@@ -6,6 +6,7 @@
 #include "common.h"
 #include "converter.h"
 #include "fs_utils.h"
+#include "http_resp_header.h"
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <netdb.h>
@@ -92,12 +93,13 @@ int main()
 int main()
 {
     test_http_req_header();
-    test_class_http();
-    test_class_string();
-    test_class_string_array();
-    test_class_json();
-    test_converter();
-    test_fs_utils();
+    test_http_resp_header();
+//    test_class_http();
+//    test_class_string();
+//    test_class_string_array();
+//    test_class_json();
+//    test_converter();
+//    test_fs_utils();
 }
 #else
 #error "TEST must be 0 or 1"
