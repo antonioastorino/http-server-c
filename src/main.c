@@ -2,23 +2,19 @@
 #include "class_json.h"
 #include "class_string.h"
 #include "class_string_array.h"
+#include "class_tcp.h"
 #include "common.h"
 #include "converter.h"
 #include "fs_utils.h"
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <netdb.h>
-#include <netinet/in.h>
 #include <pthread.h>
 #include <signal.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#define MAX_MSG_LEN 512
 
 void* watchdog(void* pid_p)
 {
@@ -40,58 +36,16 @@ void* watchdog(void* pid_p)
 }
 
 #if TEST == 0
-int main(int argc, const char* argv[])
+int main()
 {
-    if (argc != 2)
-    {
-        printf("Please specify one argument only - port number\n");
-        return -1;
-    }
+    return_on_err(Tcp_server_init());
 
-    LOG_INFO("Server running\n");
-
-    const int domain   = AF_INET; // (= PF_INET) Internet domain sockets for use with IPv4 addresses
-    const int type     = SOCK_STREAM; // bitstream socket used in TCP
-    const int protocol = 0; // default type of socket that works with the other chosen params
-    int on             = 1;
-
-    // create a socket
-    int server_socket = socket(domain, type, protocol);
-    if (server_socket == -1)
-    {
-        LOG_ERROR("Failed to create socket\n");
-        return -1;
-    }
-
-    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
-    // specify address
-    struct sockaddr_in server_address;
-    server_address.sin_family      = AF_INET;
-    server_address.sin_port        = htons(atoi(argv[1]));
-    server_address.sin_addr.s_addr = INADDR_ANY; // htonl(0x7F000001 /*127.0.0.1*/);
-
-    if (-1 == bind(server_socket, (struct sockaddr*)&server_address, sizeof(server_address)))
-    {
-        LOG_PERROR("Failed to bind to network socket");
-        return -1;
-    }
-
-    // listen to connections
-    if (listen(server_socket, SOMAXCONN) == -1)
-    {
-        LOG_PERROR("Failed to listen to socket");
-        return -1;
-    }
-    struct sockaddr_in client;
-    socklen_t client_size;
-
+    LOG_INFO("Server running");
     while (1)
     {
-        int client_socket = accept(server_socket, (struct sockaddr*)&client, &client_size);
-
-        if (client_socket == -1)
+        if (is_err(Tcp_accept()))
         {
-            LOG_PERROR("Problem with client connecting");
+            LOG_ERROR("Failed to accept connection.");
             continue;
         }
 
@@ -99,38 +53,30 @@ int main(int argc, const char* argv[])
         if (pid == 0)
         {
             // Child process
-            close(server_socket);
+            Tcp_close_server_socket();
             // receive message from the client
-            int bytes_recv;
-            char in_buff[MAX_MSG_LEN] = {0};
-            bytes_recv                = read(client_socket, &in_buff, MAX_MSG_LEN);
-            if (bytes_recv == -1)
+            char in_buff[TCP_MAX_MSG_LEN] = {0};
+            if (is_err(Tcp_read(in_buff)))
             {
-                LOG_ERROR("Socket error");
-                close(client_socket);
-                return -1;
+                Tcp_close_client_socket();
+                return ERR_UNEXPECTED;
             }
-            LOG_TRACE("Client socket: %d - bytes %d\n", client_socket, bytes_recv);
             HttpReqObj req_obj;
             Error ret_res = HttpReqObj_new(in_buff, &req_obj);
             if (!is_err(ret_res))
             {
-                ret_res = HttpReqObj_handle(&req_obj, client_socket);
+                ret_res = HttpReqObj_handle(&req_obj, Tcp_get_client_socket());
             }
 
             HttpReqObj_destroy(&req_obj);
-            close(client_socket);
-            LOG_INFO("[CHILD] Closing socket Nr. %d\n", client_socket);
-            shutdown(client_socket, SHUT_RDWR);
+            Tcp_close_client_socket();
 
-            return 0;
+            return ret_res;
         }
         else
         {
             // Parent process
-            close(client_socket);
-            shutdown(client_socket, SHUT_RDWR);
-            LOG_INFO("[PARENT] Connection to socket nr. %d accepted.\n", client_socket);
+            Tcp_close_client_socket();
             pthread_t t1;
             if (pthread_create(&t1, NULL, watchdog, &pid) == -1)
             {
@@ -140,7 +86,7 @@ int main(int argc, const char* argv[])
         }
     }
 
-    return 0;
+    return ERR_ALL_GOOD;
 }
 #elif TEST == 1
 int main()

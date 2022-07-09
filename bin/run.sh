@@ -95,12 +95,12 @@ if [ "${MODE}" = "TEST" ] || [ "${MODE}" = "DEBUG" ]; then
         analyze_mem
         echo
     else
-        lldb ./"${BUILD_DIR}/${APP_NAME} 8080"
+        lldb ./"${BUILD_DIR}/${APP_NAME}"
     fi
 elif [ "${MODE}" = "BUILD" ]; then
     make OPT=${OPT_LEVEL} 2>&1
 else
     make OPT=${OPT_LEVEL} 2>&1
-    ./"${BUILD_DIR}/${APP_NAME}" 8080
+    ./"${BUILD_DIR}/${APP_NAME}"
 fi
 popd

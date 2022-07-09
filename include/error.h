@@ -1,7 +1,7 @@
 #ifndef ERROR_H
 #define ERROR_H
 
-typedef enum Error
+typedef enum
 {
     ERR_ALL_GOOD,
     ERR_INVALID,
@@ -22,6 +22,7 @@ typedef enum Error
     ERR_TYPE_MISMATCH,
     ERR_FS_INTERNAL,
     ERR_HTTP_INTERNAL,
+    ERR_TCP_INTERNAL,
     ERR_NOT_FOUND,
     ERR_FATAL,
 } Error;
