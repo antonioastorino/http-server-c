@@ -34,7 +34,7 @@ Error HttpReqObj_new(const char* raw_request, HttpReqObj* out_http_req_obj)
     // Process the first half, assuming that it's the header.
     char* header  = raw_data_string_array_obj.str_array_char_p[0];
     char* body    = raw_data_string_array_obj.str_array_char_p[1];
-    Error ret_res = http_header_init(header, &out_http_req_obj->header);
+    Error ret_res = http_req_header_init(header, &out_http_req_obj->header);
     if (ret_res != ERR_ALL_GOOD)
     {
         LOG_ERROR("Failed to initialize header");

@@ -91,7 +91,7 @@ int main()
 #elif TEST == 1
 int main()
 {
-    test_http_header();
+    test_http_req_header();
     test_class_http();
     test_class_string();
     test_class_string_array();

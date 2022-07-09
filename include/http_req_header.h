@@ -1,5 +1,5 @@
-#ifndef HTTP_HEADER_H
-#define HTTP_HEADER_H
+#ifndef HTTP_REQ_HEADER_H
+#define HTTP_REQ_HEADER_H
 #include "common.h"
 #include <limits.h>
 
@@ -25,10 +25,10 @@ typedef struct
     HttpVersion version;
 } HttpReqHeader;
 
-Error http_header_init(const char*, HttpReqHeader*);
+Error http_req_header_init(const char*, HttpReqHeader*);
 
 #if TEST == 1
-void test_http_header();
+void test_http_req_header();
 #endif
 
-#endif /* HTTP_HEADER_H */
+#endif /* HTTP_REQ_HEADER_H */

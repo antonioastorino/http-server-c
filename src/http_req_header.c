@@ -1,5 +1,5 @@
 #include "class_string_array.h"
-#include "http_header.h"
+#include "http_req_header.h"
 
 #define compare_method(method_char_p, method_name)                                                 \
     if (0 == strncmp(method_char_p, #method_name, strlen(#method_name)))                           \
@@ -34,12 +34,12 @@ HttpVersion http_parse_version(const char* input_version_char_p)
     return VERSION_VALID;
 }
 
-Error http_header_init(const char* header_str_p, HttpReqHeader* out_http_header)
+Error http_req_header_init(const char* header_str_p, HttpReqHeader* out_http_req_header)
 {
-    Error ret_res            = ERR_ALL_GOOD;
-    out_http_header->method  = METHOD_UNKNOWN;
-    out_http_header->version = VERSION_UNKNOWN;
-    memset(out_http_header->location, 0, PATH_MAX);
+    Error ret_res                = ERR_ALL_GOOD;
+    out_http_req_header->method  = METHOD_UNKNOWN;
+    out_http_req_header->version = VERSION_UNKNOWN;
+    memset(out_http_req_header->location, 0, PATH_MAX);
     // Split the header into lines.
     StringArray header_lines_string_array_obj = StringArray_new(header_str_p, "\r\n");
     LOG_INFO("Elements in the array: `%lu`", header_lines_string_array_obj.num_of_elements);
@@ -47,7 +47,7 @@ Error http_header_init(const char* header_str_p, HttpReqHeader* out_http_header)
     {
         LOG_ERROR("Invalid header");
         StringArray_destroy(&header_lines_string_array_obj);
-        out_http_header->method = METHOD_UNKNOWN;
+        out_http_req_header->method = METHOD_UNKNOWN;
         return ERR_INVALID;
     }
     // Split the first line into its component.
@@ -68,27 +68,28 @@ Error http_header_init(const char* header_str_p, HttpReqHeader* out_http_header)
     case 2:
     case 3:
         // try to parse method and path
-        out_http_header->method
+        out_http_req_header->method
             = http_parse_method(method_path_version_string_array_obj.str_array_char_p[0]);
 
-        if (out_http_header->method == METHOD_UNKNOWN)
+        if (out_http_req_header->method == METHOD_UNKNOWN)
         {
             LOG_ERROR("Invalid method detected");
             ret_res = ERR_INVALID;
             break;
         }
         if (http_parse_path(
-                method_path_version_string_array_obj.str_array_char_p[1], out_http_header->location)
+                method_path_version_string_array_obj.str_array_char_p[1],
+                out_http_req_header->location)
             != ERR_ALL_GOOD)
         {
             ret_res = ERR_INVALID;
             break;
         }
-        LOG_TRACE("Path: `%s`", out_http_header->location);
+        LOG_TRACE("Path: `%s`", out_http_req_header->location);
         // try to parse version as well
         if (method_path_version_string_array_obj.num_of_elements == 3)
         {
-            out_http_header->version
+            out_http_req_header->version
                 = http_parse_version(method_path_version_string_array_obj.str_array_char_p[2]);
         }
         break;
@@ -102,7 +103,7 @@ Error http_header_init(const char* header_str_p, HttpReqHeader* out_http_header)
 }
 
 #if TEST == 1
-void test_http_header()
+void test_http_req_header()
 {
     PRINT_BANNER();
     PRINT_TEST_TITLE("Parsing method - pass");
@@ -133,7 +134,8 @@ void test_http_header()
     PRINT_TEST_TITLE("Populate header - full");
     {
         HttpReqHeader http_req_header_obj;
-        Error ret_res = http_header_init("GET /requested/path HTTP/1.1\r\n", &http_req_header_obj);
+        Error ret_res
+            = http_req_header_init("GET /requested/path HTTP/1.1\r\n", &http_req_header_obj);
         ASSERT(ret_res == ERR_ALL_GOOD, "Initialization successful.");
         ASSERT(http_req_header_obj.method == METHOD_GET, "Method found.");
         ASSERT(strcmp(http_req_header_obj.location, "/requested/path") == 0, "Path saved.");
@@ -142,7 +144,7 @@ void test_http_header()
     PRINT_TEST_TITLE("Populate header - no version");
     {
         HttpReqHeader http_req_header_obj;
-        Error ret_res = http_header_init("GET /requested/path\r\n", &http_req_header_obj);
+        Error ret_res = http_req_header_init("GET /requested/path\r\n", &http_req_header_obj);
         ASSERT(ret_res == ERR_ALL_GOOD, "Initialization successful.");
         ASSERT(http_req_header_obj.method == METHOD_GET, "Method found.");
         printf("Path: %d\n", strcmp(http_req_header_obj.location, "/requested/path"));
@@ -154,13 +156,15 @@ void test_http_header()
     PRINT_TEST_TITLE("Populate header - fail");
     {
         HttpReqHeader http_req_header_obj;
-        ASSERT(http_header_init("GET\r\n", &http_req_header_obj) == ERR_INVALID, "Missing path.");
+        ASSERT(
+            http_req_header_init("GET\r\n", &http_req_header_obj) == ERR_INVALID, "Missing path.");
         ASSERT(http_req_header_obj.method == METHOD_UNKNOWN, "Unknown method set.");
         ASSERT(strcmp(http_req_header_obj.location, "\0") == 0, "Path not set.");
         ASSERT(http_req_header_obj.version == VERSION_UNKNOWN, "Version set to UNKNOWN.");
 
         ASSERT(
-            http_header_init("\r\n", &http_req_header_obj) == ERR_INVALID, "Empty header handled.");
+            http_req_header_init("\r\n", &http_req_header_obj) == ERR_INVALID,
+            "Empty header handled.");
         ASSERT(http_req_header_obj.method == METHOD_UNKNOWN, "Unknown method set.");
         ASSERT(strcmp(http_req_header_obj.location, "\0") == 0, "Path not set.");
         ASSERT(http_req_header_obj.version == VERSION_UNKNOWN, "Version set to UNKNOWN.");
