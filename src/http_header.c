@@ -1,5 +1,5 @@
-#include "http_header.h"
 #include "class_string_array.h"
+#include "http_header.h"
 
 #define compare_method(method_char_p, method_name)                                                 \
     if (0 == strncmp(method_char_p, #method_name, strlen(#method_name)))                           \
@@ -27,18 +27,18 @@ Error http_parse_path(const char* input_path_char_p, char* out_path_char_p)
     return ERR_ALL_GOOD;
 }
 
-HttpProtocol http_parse_protocol(const char* input_protocol_char_p)
+HttpVersion http_parse_version(const char* input_version_char_p)
 {
-    // TODO: detect protocol
-    UNUSED(input_protocol_char_p);
-    return PROTOCOL_VALID;
+    // TODO: detect version)
+    UNUSED(input_version_char_p);
+    return VERSION_VALID;
 }
 
 Error http_header_init(const char* header_str_p, HttpReqHeader* out_http_header)
 {
-    Error ret_res                 = ERR_ALL_GOOD;
-    out_http_header->method   = METHOD_UNKNOWN;
-    out_http_header->protocol = PROTOCOL_UNKNOWN;
+    Error ret_res            = ERR_ALL_GOOD;
+    out_http_header->method  = METHOD_UNKNOWN;
+    out_http_header->version = VERSION_UNKNOWN;
     memset(out_http_header->location, 0, PATH_MAX);
     // Split the header into lines.
     StringArray header_lines_string_array_obj = StringArray_new(header_str_p, "\r\n");
@@ -54,12 +54,12 @@ Error http_header_init(const char* header_str_p, HttpReqHeader* out_http_header)
     // The result should be:
     // str_array_char_p[0] = method
     // str_array_char_p[1] = /path/to/follow
-    // str_array_char_p[2] = protocol (optional)
-    StringArray method_path_protocol_string_array_obj
+    // str_array_char_p[2] = versio (optional)
+    StringArray method_path_version_string_array_obj
         = StringArray_new(header_lines_string_array_obj.str_array_char_p[0], " ");
-    LOG_INFO("Elements in the array: `%lu`", method_path_protocol_string_array_obj.num_of_elements);
+    LOG_INFO("Elements in the array: `%lu`", method_path_version_string_array_obj.num_of_elements);
 
-    switch (method_path_protocol_string_array_obj.num_of_elements)
+    switch (method_path_version_string_array_obj.num_of_elements)
     {
     case 0:
     case 1:
@@ -69,7 +69,7 @@ Error http_header_init(const char* header_str_p, HttpReqHeader* out_http_header)
     case 3:
         // try to parse method and path
         out_http_header->method
-            = http_parse_method(method_path_protocol_string_array_obj.str_array_char_p[0]);
+            = http_parse_method(method_path_version_string_array_obj.str_array_char_p[0]);
 
         if (out_http_header->method == METHOD_UNKNOWN)
         {
@@ -78,25 +78,24 @@ Error http_header_init(const char* header_str_p, HttpReqHeader* out_http_header)
             break;
         }
         if (http_parse_path(
-                method_path_protocol_string_array_obj.str_array_char_p[1],
-                out_http_header->location)
+                method_path_version_string_array_obj.str_array_char_p[1], out_http_header->location)
             != ERR_ALL_GOOD)
         {
             ret_res = ERR_INVALID;
             break;
         }
         LOG_TRACE("Path: `%s`", out_http_header->location);
-        // try to parse protocol as well
-        if (method_path_protocol_string_array_obj.num_of_elements == 3)
+        // try to parse version as well
+        if (method_path_version_string_array_obj.num_of_elements == 3)
         {
-            out_http_header->protocol
-                = http_parse_protocol(method_path_protocol_string_array_obj.str_array_char_p[2]);
+            out_http_header->version
+                = http_parse_version(method_path_version_string_array_obj.str_array_char_p[2]);
         }
         break;
     default:
         break;
     }
-    StringArray_destroy(&method_path_protocol_string_array_obj);
+    StringArray_destroy(&method_path_version_string_array_obj);
     // TODO: parse the other lines as a JsonObj.
     StringArray_destroy(&header_lines_string_array_obj);
     return ret_res;
@@ -138,9 +137,9 @@ void test_http_header()
         ASSERT(ret_res == ERR_ALL_GOOD, "Initialization successful.");
         ASSERT(http_req_header_obj.method == METHOD_GET, "Method found.");
         ASSERT(strcmp(http_req_header_obj.location, "/requested/path") == 0, "Path saved.");
-        ASSERT(http_req_header_obj.protocol == PROTOCOL_VALID, "Protocol saved.");
+        ASSERT(http_req_header_obj.version == VERSION_VALID, "Version saved.");
     }
-    PRINT_TEST_TITLE("Populate header - no protocol");
+    PRINT_TEST_TITLE("Populate header - no version");
     {
         HttpReqHeader http_req_header_obj;
         Error ret_res = http_header_init("GET /requested/path\r\n", &http_req_header_obj);
@@ -148,7 +147,7 @@ void test_http_header()
         ASSERT(http_req_header_obj.method == METHOD_GET, "Method found.");
         printf("Path: %d\n", strcmp(http_req_header_obj.location, "/requested/path"));
         ASSERT(strcmp(http_req_header_obj.location, "/requested/path") == 0, "Path saved.");
-        ASSERT(http_req_header_obj.protocol == PROTOCOL_UNKNOWN, "Protocol not found.");
+        ASSERT(http_req_header_obj.version == VERSION_UNKNOWN, "Version not found.");
     }
     /*
      */
@@ -158,13 +157,13 @@ void test_http_header()
         ASSERT(http_header_init("GET\r\n", &http_req_header_obj) == ERR_INVALID, "Missing path.");
         ASSERT(http_req_header_obj.method == METHOD_UNKNOWN, "Unknown method set.");
         ASSERT(strcmp(http_req_header_obj.location, "\0") == 0, "Path not set.");
-        ASSERT(http_req_header_obj.protocol == PROTOCOL_UNKNOWN, "Protocol set to UNKNOWN.");
+        ASSERT(http_req_header_obj.version == VERSION_UNKNOWN, "Version set to UNKNOWN.");
 
         ASSERT(
             http_header_init("\r\n", &http_req_header_obj) == ERR_INVALID, "Empty header handled.");
         ASSERT(http_req_header_obj.method == METHOD_UNKNOWN, "Unknown method set.");
         ASSERT(strcmp(http_req_header_obj.location, "\0") == 0, "Path not set.");
-        ASSERT(http_req_header_obj.protocol == PROTOCOL_UNKNOWN, "Protocol set to UNKNOWN.");
+        ASSERT(http_req_header_obj.version == VERSION_UNKNOWN, "Version set to UNKNOWN.");
     }
 }
 #endif /* TEST == 1 */

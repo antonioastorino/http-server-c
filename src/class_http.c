@@ -5,12 +5,18 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#define HTTP_VERSION "HTTP/1.0"
 
 #ifdef __linux__
 #include <sys/sendfile.h>
 #endif /* __linux__ */
 
 #define ASSETS_DIR "assets"
+
+typedef struct {
+    
+    HttpVersion version;
+} HttpRespHeader;
 
 Error HttpReqObj_new(const char* raw_request, HttpReqObj* out_http_req_obj)
 {
@@ -75,11 +81,14 @@ Error HttpReqObj_handle(HttpReqObj* http_req_obj_p, int client_socket)
         if (realpath(assets_path, resolved_path) == NULL)
         {
             LOG_ERROR("Invalid path");
-            sprintf(response_header_char_p, "HTTP/1.0 404 Not Found\r\n\r\n");
-            write(client_socket, (char*)response_header_char_p, strlen((char*)response_header_char_p));
+            sprintf(response_header_char_p, HTTP_VERSION " 404 Not Found\r\n\r\n");
+            write(
+                client_socket,
+                (char*)response_header_char_p,
+                strlen((char*)response_header_char_p));
             return ERR_ALL_GOOD;
         }
-        sprintf(response_header_char_p, "HTTP/1.0 200 OK\r\n\r\n");
+        sprintf(response_header_char_p, HTTP_VERSION " 200 OK\r\n\r\n");
         write(client_socket, (char*)response_header_char_p, strlen((char*)response_header_char_p));
         LOG_INFO("Looking for resource at `%s`", resolved_path);
         int resource_file = open(resolved_path, O_RDONLY);
@@ -129,11 +138,11 @@ void test_class_http()
     {
         HttpReqObj req_obj;
         const char* req_raw
-            = "POST /some/path PROTOCOL\r\ncontent-type: some_value\r\n\r\nsome body\r\n";
+            = "POST /some/path VERSION\r\ncontent-type: some_value\r\n\r\nsome body\r\n";
         ASSERT(HttpReqObj_new(req_raw, &req_obj) == ERR_ALL_GOOD, "Valid request.");
         ASSERT(req_obj.header.method == METHOD_POST, "Method POST correct.");
         ASSERT_EQ(req_obj.header.location, "/some/path", "Path stored properly.");
-        ASSERT(req_obj.header.protocol == PROTOCOL_VALID, "Protocol correct.");
+        ASSERT(req_obj.header.version == VERSION_VALID, "Version correct.");
         ASSERT_EQ(req_obj.body_string_obj.str, "some body\r\n", "Body correct");
         HttpReqObj_destroy(&req_obj);
     }

@@ -14,15 +14,15 @@ typedef enum
 
 typedef enum
 {
-    PROTOCOL_VALID,
-    PROTOCOL_UNKNOWN,
-} HttpProtocol;
+    VERSION_VALID,
+    VERSION_UNKNOWN,
+} HttpVersion;
 
 typedef struct
 {
     HttpMethod method;
     char location[PATH_MAX];
-    HttpProtocol protocol;
+    HttpVersion version;
 } HttpReqHeader;
 
 Error http_header_init(const char*, HttpReqHeader*);

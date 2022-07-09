@@ -4,9 +4,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-bool g_initialized = false;
-int g_server_socket;
-int g_client_socket;
+static bool g_initialized = false;
+static int g_server_socket;
+static int g_client_socket;
 
 Error Tcp_server_init()
 {
