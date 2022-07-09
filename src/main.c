@@ -5,12 +5,12 @@
 #include "common.h"
 #include "converter.h"
 #include "fs_utils.h"
-#include <signal.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -70,19 +70,16 @@ int main(int argc, const char* argv[])
     server_address.sin_port        = htons(atoi(argv[1]));
     server_address.sin_addr.s_addr = INADDR_ANY; // htonl(0x7F000001 /*127.0.0.1*/);
 
-    int bind_status
-        = bind(server_socket, (struct sockaddr*)&server_address, sizeof(server_address));
-
-    if (bind_status == -1)
+    if (-1 == bind(server_socket, (struct sockaddr*)&server_address, sizeof(server_address)))
     {
-        LOG_ERROR("Failed to bind to network socket\n");
+        LOG_PERROR("Failed to bind to network socket");
         return -1;
     }
 
     // listen to connections
     if (listen(server_socket, SOMAXCONN) == -1)
     {
-        LOG_ERROR("Failed to listen to socket\n");
+        LOG_PERROR("Failed to listen to socket");
         return -1;
     }
     struct sockaddr_in client;
@@ -94,7 +91,7 @@ int main(int argc, const char* argv[])
 
         if (client_socket == -1)
         {
-            LOG_ERROR("Problem with client connecting\n");
+            LOG_PERROR("Problem with client connecting");
             continue;
         }
 
@@ -103,33 +100,27 @@ int main(int argc, const char* argv[])
         {
             // Child process
             close(server_socket);
-            char in_buff[MAX_MSG_LEN];
-            char out_buff[512];
             // receive message from the client
             int bytes_recv;
-            printf("\n---------------------------\n\n");
-            memset(&in_buff, 0, MAX_MSG_LEN);
-            memset(&out_buff, 0, 512);
-            bytes_recv = read(client_socket, &in_buff, MAX_MSG_LEN);
-
+            char in_buff[MAX_MSG_LEN] = {0};
+            bytes_recv                = read(client_socket, &in_buff, MAX_MSG_LEN);
             if (bytes_recv == -1)
             {
-                printf("Socket error\n");
+                LOG_ERROR("Socket error");
                 close(client_socket);
                 return -1;
             }
-            printf("Client socket: %d - bytes %d\n", client_socket, bytes_recv);
-            printf("%s\n", in_buff);
+            LOG_TRACE("Client socket: %d - bytes %d\n", client_socket, bytes_recv);
             HttpReqObj req_obj;
             Error ret_res = HttpReqObj_new(in_buff, &req_obj);
-            if (ret_res == ERR_ALL_GOOD)
+            if (!is_err(ret_res))
             {
                 ret_res = HttpReqObj_handle(&req_obj, client_socket);
             }
 
             HttpReqObj_destroy(&req_obj);
             close(client_socket);
-            printf("[CHILD] Closing socket Nr. %d\n", client_socket);
+            LOG_INFO("[CHILD] Closing socket Nr. %d\n", client_socket);
             shutdown(client_socket, SHUT_RDWR);
 
             return 0;
@@ -138,6 +129,7 @@ int main(int argc, const char* argv[])
         {
             // Parent process
             close(client_socket);
+            shutdown(client_socket, SHUT_RDWR);
             LOG_INFO("[PARENT] Connection to socket nr. %d accepted.\n", client_socket);
             pthread_t t1;
             if (pthread_create(&t1, NULL, watchdog, &pid) == -1)

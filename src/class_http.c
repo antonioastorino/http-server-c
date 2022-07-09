@@ -53,17 +53,16 @@ Error HttpReqObj_destroy(HttpReqObj* http_req_obj_p)
 
 Error HttpReqObj_handle(HttpReqObj* http_req_obj_p, int client_socket)
 {
+    char response_header_char_p[1024];
     switch (http_req_obj_p->header.method)
     {
     case METHOD_GET:
     {
         // TODO: use getcwd to make sure the requested path is not a parent of the assets folder
         // const char* path_slices[] = { ASSETS_DIR, http_req_obj_p->header.location, NULL };
-        // char resolved_path[MAX_PATH_LENGTH];
-        // realpath(assets_path_string_obj.str, resolved_path);
         // String assets_path_string_obj     = String_join(path_slices, "");
         // printf("Resolved `%s`\n\n", resolved_path);
-        char assets_path[MAX_PATH_LENGTH] = {0};
+        char assets_path[PATH_MAX] = {0};
         if (strcmp(http_req_obj_p->header.location, "/") == 0)
         {
             sprintf(assets_path, "%s/index.html", ASSETS_DIR);
@@ -72,18 +71,25 @@ Error HttpReqObj_handle(HttpReqObj* http_req_obj_p, int client_socket)
         {
             sprintf(assets_path, "%s%s", ASSETS_DIR, http_req_obj_p->header.location);
         }
-        char out_buff[1024];
-        sprintf(out_buff, "HTTP/1.0 200 OK\r\n\r\n");
-        write(client_socket, (char*)out_buff, strlen((char*)out_buff));
-        LOG_INFO("Looking for resource at `%s`", assets_path);
-        int resource_file = open(assets_path, O_RDONLY);
+        char resolved_path[PATH_MAX];
+        if (realpath(assets_path, resolved_path) == NULL)
+        {
+            LOG_ERROR("Invalid path");
+            sprintf(response_header_char_p, "HTTP/1.0 404 Not Found\r\n\r\n");
+            write(client_socket, (char*)response_header_char_p, strlen((char*)response_header_char_p));
+            return ERR_ALL_GOOD;
+        }
+        sprintf(response_header_char_p, "HTTP/1.0 200 OK\r\n\r\n");
+        write(client_socket, (char*)response_header_char_p, strlen((char*)response_header_char_p));
+        LOG_INFO("Looking for resource at `%s`", resolved_path);
+        int resource_file = open(resolved_path, O_RDONLY);
         if (resource_file == -1)
         {
             LOG_PERROR("Error opening file");
             return ERR_UNDEFINED;
         }
 #ifdef __linux__
-        FILE* assets_file = fopen(assets_path, "r");
+        FILE* assets_file = fopen(resolved_path, "r");
         if (fseek(assets_file, 0L, SEEK_END) == -1)
         {
             LOG_PERROR("fseek failed");

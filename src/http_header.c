@@ -39,7 +39,7 @@ Error http_header_init(const char* header_str_p, HttpReqHeader* out_http_header)
     Error ret_res                 = ERR_ALL_GOOD;
     out_http_header->method   = METHOD_UNKNOWN;
     out_http_header->protocol = PROTOCOL_UNKNOWN;
-    memset(out_http_header->location, 0, MAX_PATH_LENGTH);
+    memset(out_http_header->location, 0, PATH_MAX);
     // Split the header into lines.
     StringArray header_lines_string_array_obj = StringArray_new(header_str_p, "\r\n");
     LOG_INFO("Elements in the array: `%lu`", header_lines_string_array_obj.num_of_elements);

@@ -5,24 +5,13 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 #define TEST 0
 
 #include "error.h"
 #include "logger.h"
 #include "my_memory.h"
-
-#define return_on_err(_expr)                                                                       \
-    {                                                                                              \
-        Error _res = _expr;                                                                        \
-        if (_res != ERR_ALL_GOOD)                                                                  \
-        {                                                                                          \
-            LOG_WARNING("Error propagated from here.");                                            \
-            return _res;                                                                           \
-        }                                                                                          \
-    }
-
-#define is_err(_expr) (_expr != ERR_ALL_GOOD)
 
 #define UNUSED(x) (void)(x)
 #if TEST == 1

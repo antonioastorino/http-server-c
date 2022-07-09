@@ -1,7 +1,7 @@
 #ifndef HTTP_HEADER_H
 #define HTTP_HEADER_H
 #include "common.h"
-#define MAX_PATH_LENGTH (256)
+#include <limits.h>
 
 typedef enum
 {
@@ -21,7 +21,7 @@ typedef enum
 typedef struct
 {
     HttpMethod method;
-    char location[MAX_PATH_LENGTH];
+    char location[PATH_MAX];
     HttpProtocol protocol;
 } HttpReqHeader;
 

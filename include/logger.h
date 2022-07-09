@@ -27,6 +27,18 @@
 #define log_err stderr
 #endif
 
+#define return_on_err(_expr)                                                                       \
+    {                                                                                              \
+        Error _res = _expr;                                                                        \
+        if (_res != ERR_ALL_GOOD)                                                                  \
+        {                                                                                          \
+            LOG_WARNING("Error propagated from here.");                                            \
+            return _res;                                                                           \
+        }                                                                                          \
+    }
+
+#define is_err(_expr) (_expr != ERR_ALL_GOOD)
+
 #if LOG_LEVEL > LEVEL_NO_LOGS
 #define PRINT_SEPARATOR() printf("--------" __TIMESTAMP__ "--------\n")
 #define DATE_TIME_STR_LEN 26
