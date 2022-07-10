@@ -11,7 +11,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-// Private.
 Error _fs_utils_recursive_rm_r(FTS*, const char*);
 
 bool _fs_utils_does_exist(const char* p_path)
@@ -46,7 +45,7 @@ Error _fs_utils_create_or_append(
 /* ------------------------------------------ Folders ------------------------------------------- */
 Error fs_utils_mkdir(const char* dir_path_char_p, mode_t permission)
 {
-    Error ret_res = ERR_ALL_GOOD;
+    Error ret_res   = ERR_ALL_GOOD;
     // Save the current mode mask and reset the mask.
     mode_t old_mask = umask(0);
     if (!_fs_utils_does_exist(dir_path_char_p))
@@ -87,7 +86,7 @@ Error fs_utils_mkdir_p(const char* dir_path_char_p, mode_t permission)
     {
         partial_path[0] = '/';
         // Skip the fist folder found (root folder) in the path - it's an absolute path.
-        start_index = 1;
+        start_index     = 1;
     }
     for (size_t i = start_index; i < path_length; i++)
     {
@@ -143,7 +142,7 @@ Error fs_utils_rm_from_path_as_char_p(const char* file_path_char_p)
     char* paths[2] = {(char*)file_path_char_p, NULL};
 
     // Create the received path handle.
-    FTS* fts_p = fts_open(paths, FTS_PHYSICAL | FTS_NOCHDIR, NULL);
+    FTS* fts_p     = fts_open(paths, FTS_PHYSICAL | FTS_NOCHDIR, NULL);
     if (fts_p == NULL)
     {
         LOG_ERROR("Failed to initialize fts. errno: `%d`", errno);
@@ -297,7 +296,7 @@ Error fs_utils_rm_r(const char* dir_path_char_p)
     }
     char* paths[] = {(char*)dir_path_char_p, NULL};
     // Create the received path handle.
-    FTS* fts_p = fts_open(paths, FTS_PHYSICAL | FTS_NOCHDIR, NULL);
+    FTS* fts_p    = fts_open(paths, FTS_PHYSICAL | FTS_NOCHDIR, NULL);
     if (fts_p == NULL)
     {
         LOG_ERROR("Failed to initialize fts. errno `%d`.", errno);
@@ -310,6 +309,37 @@ Error fs_utils_rm_r(const char* dir_path_char_p)
     return_on_err(ret_res);
     LOG_INFO("`%s` successfully deleted.", dir_path_char_p);
     return ret_res;
+}
+
+bool fs_utils_is_file(char* path_to_file_char_p)
+{
+    struct stat st = {0};
+    if (stat(path_to_file_char_p, &st) == -1)
+    {
+        return false;
+    }
+    if ((st.st_mode & S_IFMT) == S_IFREG)
+    {
+        return true;
+    }
+    return false;
+}
+
+Error fs_utils_get_file_size(char* path_to_file_char_p, off_t* out_file_size)
+{
+    struct stat st = {0};
+    if (stat(path_to_file_char_p, &st) == -1)
+    {
+        LOG_PERROR("Failed to stat `%s`", path_to_file_char_p);
+        return ERR_FS_INTERNAL;
+    }
+    if ((st.st_mode & S_IFMT) == S_IFREG)
+    {
+        *out_file_size = st.st_size;
+        return ERR_ALL_GOOD;
+    }
+    LOG_ERROR("`%s` is not a file", path_to_file_char_p);
+    return ERR_INVALID;
 }
 
 #if TEST == 1
@@ -403,15 +433,26 @@ void test_fs_utils()
     String_destroy(&content_string);
 
     PRINT_TEST_TITLE("create with content string");
-    path_string    = "test/artifacts/new-file-2.txt";
-    content_char_p = "this is new\n";
-    // First time - create.
-    fs_utils_create_with_content(path_string, content_char_p);
-    // Second time - overwrite.
-    fs_utils_create_with_content(path_string, content_char_p);
-    fs_utils_read_to_string(path_string, &content_string);
-    ASSERT_EQ(content_string.str, "this is new\n", "File created and modified correctly");
-    String_destroy(&content_string);
+    {
+        path_string    = "test/artifacts/new-file-2.txt";
+        content_char_p = "this is new\n";
+        // First time - create.
+        fs_utils_create_with_content(path_string, content_char_p);
+        // Second time - overwrite.
+        fs_utils_create_with_content(path_string, content_char_p);
+        ASSERT(fs_utils_is_file(path_string), "Created file found.");
+        fs_utils_read_to_string(path_string, &content_string);
+        ASSERT_EQ(content_string.str, "this is new\n", "File created and modified correctly");
+        String_destroy(&content_string);
+    }
+
+    PRINT_TEST_TITLE("Get file size");
+    {
+        path_string = "test/assets/readme.txt";
+        off_t file_size;
+        ASSERT(fs_utils_get_file_size(path_string, &file_size) == ERR_ALL_GOOD, "File found.");
+        ASSERT(file_size == 20, "File size correct.");
+    }
     /**/
 }
 #endif

@@ -21,8 +21,6 @@ HttpMethod http_parse_method(const char* method_char_p)
 
 Error http_parse_path(const char* input_path_char_p, char* out_path_char_p)
 {
-    // TODO: detect errors in path
-    LOG_TRACE("Trying to parse path `%s`", input_path_char_p);
     strncpy(out_path_char_p, input_path_char_p, strlen(input_path_char_p));
     return ERR_ALL_GOOD;
 }

@@ -1,4 +1,5 @@
 #include "tcp_utils.h"
+#include <fcntl.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -108,5 +109,43 @@ Error tcp_utils_read(char* in_buff)
         return ERR_TCP_INTERNAL;
     }
     LOG_TRACE("Client socket: %d - bytes %d\n", g_client_socket, bytes_recv);
+    return ERR_ALL_GOOD;
+}
+
+Error tcp_utils_write(char* out_buff_char_p)
+{
+    if (write(g_client_socket, out_buff_char_p, strlen(out_buff_char_p)) == -1)
+    {
+        LOG_PERROR("Failed to send data");
+        return ERR_TCP_INTERNAL;
+    }
+    return ERR_ALL_GOOD;
+}
+
+Error tcp_utils_send_file(char* file_path, long file_size)
+{
+    int resource_file = open(file_path, O_RDONLY);
+    if (resource_file == -1)
+    {
+        LOG_PERROR("Error opening file");
+        return ERR_UNEXPECTED;
+    }
+#ifdef __linux__
+    ssize_t bytes_sent = sendfile(g_client_socket, resource_file, NULL, file_size);
+    LOG_INFO("Size `%ld` bytes.", file_size);
+    LOG_INFO("Sent `%ld` bytes.", bytes_sent);
+    if (bytes_sent == -1)
+#else
+    off_t len                      = file_size; // set to 0 will send all the origin file
+    int res                        = sendfile(resource_file, g_client_socket, 0, &len, NULL, 0);
+    LOG_INFO("Sent `%lld` bytes.", len);
+    if (res == -1)
+#endif
+    {
+        LOG_PERROR("Failed to send file");
+        close(resource_file);
+        return ERR_TCP_INTERNAL;
+    }
+    close(resource_file);
     return ERR_ALL_GOOD;
 }

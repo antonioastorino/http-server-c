@@ -1,12 +1,13 @@
-#include "class_http.h"
+#include "class_http_req.h"
+#include "class_http_resp.h"
 #include "class_json.h"
 #include "class_string.h"
 #include "class_string_array.h"
-#include "class_tcp.h"
 #include "common.h"
 #include "converter.h"
 #include "fs_utils.h"
 #include "http_resp_header.h"
+#include "tcp_utils.h"
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <netdb.h>
@@ -39,12 +40,12 @@ void* watchdog(void* pid_p)
 #if TEST == 0
 int main()
 {
-    return_on_err(Tcp_server_init());
+    return_on_err(tcp_utils_server_init());
 
     LOG_INFO("Server running");
     while (1)
     {
-        if (is_err(Tcp_accept()))
+        if (is_err(tcp_utils_accept()))
         {
             LOG_ERROR("Failed to accept connection.");
             continue;
@@ -54,30 +55,66 @@ int main()
         if (pid == 0)
         {
             // Child process
-            Tcp_close_server_socket();
+            tcp_utils_close_server_socket();
             // receive message from the client
             char in_buff[TCP_MAX_MSG_LEN] = {0};
-            if (is_err(Tcp_read(in_buff)))
+            if (is_err(tcp_utils_read(in_buff)))
             {
-                Tcp_close_client_socket();
+                LOG_ERROR("Failed to read input message.");
+                tcp_utils_close_client_socket();
                 return ERR_UNEXPECTED;
             }
-            HttpReqObj req_obj;
-            Error ret_res = HttpReqObj_new(in_buff, &req_obj);
-            if (!is_err(ret_res))
+            LOG_TRACE("Input message read.");
+            HttpReqObj http_req_obj;
+            if (is_err(HttpReqObj_new(in_buff, &http_req_obj)))
             {
-                ret_res = HttpReqObj_handle(&req_obj, Tcp_get_client_socket());
+                tcp_utils_close_client_socket();
+                return ERR_UNEXPECTED;
             }
+            HttpRespObj http_resp_obj;
+            if (is_err(HttpRespObj_new(&http_req_obj, &http_resp_obj)))
+            {
+                HttpReqObj_destroy(&http_req_obj);
+                tcp_utils_close_client_socket();
+                return ERR_UNEXPECTED;
+            }
+            char http_resp_header_char_p[64];
+            if (is_err(http_resp_header_to_string(&http_resp_obj.header, http_resp_header_char_p)))
+            {
+                HttpRespObj_destroy(&http_resp_obj);
+                HttpReqObj_destroy(&http_req_obj);
+                tcp_utils_close_client_socket();
+                return ERR_UNEXPECTED;
+            }
+            if (is_err(tcp_utils_write(http_resp_header_char_p)))
+            {
+                HttpRespObj_destroy(&http_resp_obj);
+                HttpReqObj_destroy(&http_req_obj);
+                tcp_utils_close_client_socket();
+                return ERR_UNEXPECTED;
+            }
+            if (http_resp_obj.header.content_size)
+            {
+                LOG_INFO("Content-Size not zero. Trying to send file.");
+                if (is_err(tcp_utils_send_file(
+                        http_resp_obj.header.actual_location, http_resp_obj.header.content_size)))
+                {
+                    HttpRespObj_destroy(&http_resp_obj);
+                    HttpReqObj_destroy(&http_req_obj);
+                    tcp_utils_close_client_socket();
+                    return ERR_UNEXPECTED;
+                }
+            }
+            HttpRespObj_destroy(&http_resp_obj);
+            HttpReqObj_destroy(&http_req_obj);
+            tcp_utils_close_client_socket();
 
-            HttpReqObj_destroy(&req_obj);
-            Tcp_close_client_socket();
-
-            return ret_res;
+            return ERR_ALL_GOOD;
         }
         else
         {
             // Parent process
-            Tcp_close_client_socket();
+            tcp_utils_close_client_socket();
             pthread_t t1;
             if (pthread_create(&t1, NULL, watchdog, &pid) == -1)
             {
@@ -94,12 +131,12 @@ int main()
 {
     test_http_req_header();
     test_http_resp_header();
-//    test_class_http();
-//    test_class_string();
-//    test_class_string_array();
-//    test_class_json();
-//    test_converter();
-//    test_fs_utils();
+    //    test_class_http();
+    //    test_class_string();
+    //    test_class_string_array();
+    //    test_class_json();
+    //    test_converter();
+    //    test_fs_utils();
 }
 #else
 #error "TEST must be 0 or 1"

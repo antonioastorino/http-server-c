@@ -17,6 +17,8 @@ Error fs_utils_create_with_content(const char*, const char*);
 // Files and folders.
 bool fs_utils_does_exist(const char*);
 Error fs_utils_rm_r(const char*);
+bool fs_utils_is_file(char*);
+Error fs_utils_get_file_size(char*, off_t*);
 
 // clang-format off
 #define fs_utils_rm(file_path_p)                                        \
