@@ -52,7 +52,7 @@ Error http_req_header_init(const char* header_str_p, HttpReqHeader* out_http_req
     // The result should be:
     // str_array_char_p[0] = method
     // str_array_char_p[1] = /path/to/follow
-    // str_array_char_p[2] = versio (optional)
+    // str_array_char_p[2] = version (optional)
     StringArray method_path_version_string_array_obj
         = StringArray_new(header_lines_string_array_obj.str_array_char_p[0], " ");
     LOG_INFO("Elements in the array: `%lu`", method_path_version_string_array_obj.num_of_elements);
@@ -148,8 +148,6 @@ void test_http_req_header()
         ASSERT_EQ(http_req_header_obj.location, "/requested/path", "Path saved.");
         ASSERT(http_req_header_obj.version == VERSION_UNKNOWN, "Version not found.");
     }
-    /*
-     */
     PRINT_TEST_TITLE("Populate header - fail");
     {
         HttpReqHeader http_req_header_obj;

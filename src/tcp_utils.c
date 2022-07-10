@@ -88,14 +88,14 @@ int tcp_utils_get_client_socket() { return g_client_socket; }
 
 void tcp_utils_close_server_socket()
 {
-    LOG_INFO("PID `%d` closing server socket Nr. %d\n", getpid(), g_server_socket);
+    LOG_INFO("PID `%d` closing server socket Nr. `%d`.", getpid(), g_server_socket);
     close(g_server_socket);
     shutdown(g_server_socket, SHUT_RDWR);
 }
 
 void tcp_utils_close_client_socket()
 {
-    LOG_INFO("Closing client socket Nr. %d\n", g_client_socket);
+    LOG_INFO("Closing client socket Nr. `%d`", g_client_socket);
     close(g_client_socket);
     shutdown(g_client_socket, SHUT_RDWR);
 }
@@ -108,7 +108,7 @@ Error tcp_utils_read(char* in_buff)
         LOG_PERROR("Socket error");
         return ERR_TCP_INTERNAL;
     }
-    LOG_TRACE("Client socket: %d - bytes %d\n", g_client_socket, bytes_recv);
+    LOG_TRACE("Client socket: `%d` - bytes `%d`", g_client_socket, bytes_recv);
     return ERR_ALL_GOOD;
 }
 

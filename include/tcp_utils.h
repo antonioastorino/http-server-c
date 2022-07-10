@@ -1,7 +1,7 @@
 #ifndef TCP_UTILS_H
 #define TCP_UTILS_H
 #include "common.h"
-#define TCP_MAX_MSG_LEN 512
+#define TCP_MAX_MSG_LEN 4096
 
 Error tcp_utils_server_init();
 Error tcp_utils_accept();
