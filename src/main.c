@@ -78,18 +78,20 @@ int main()
                 tcp_utils_close_client_socket();
                 return ERR_UNEXPECTED;
             }
-            char http_resp_header_char_p[64];
-            if (is_err(http_resp_header_to_string(&http_resp_obj.header, http_resp_header_char_p)))
+            String http_resp_header_string_obj;
+            if (is_err(http_resp_header_to_string(
+                    &http_resp_obj.header, &http_resp_header_string_obj)))
             {
                 HttpRespObj_destroy(&http_resp_obj);
                 HttpReqObj_destroy(&http_req_obj);
                 tcp_utils_close_client_socket();
                 return ERR_UNEXPECTED;
             }
-            if (is_err(tcp_utils_write(http_resp_header_char_p)))
+            if (is_err(tcp_utils_write(http_resp_header_string_obj.str)))
             {
                 HttpRespObj_destroy(&http_resp_obj);
                 HttpReqObj_destroy(&http_req_obj);
+                String_destroy(&http_resp_header_string_obj);
                 tcp_utils_close_client_socket();
                 return ERR_UNEXPECTED;
             }
@@ -101,12 +103,14 @@ int main()
                 {
                     HttpRespObj_destroy(&http_resp_obj);
                     HttpReqObj_destroy(&http_req_obj);
+                    String_destroy(&http_resp_header_string_obj);
                     tcp_utils_close_client_socket();
                     return ERR_UNEXPECTED;
                 }
             }
             HttpRespObj_destroy(&http_resp_obj);
             HttpReqObj_destroy(&http_req_obj);
+            String_destroy(&http_resp_header_string_obj);
             tcp_utils_close_client_socket();
 
             return ERR_ALL_GOOD;

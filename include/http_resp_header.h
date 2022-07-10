@@ -6,10 +6,10 @@
 
 typedef enum
 {
+    RESP_STATUS_UNDEFINED,
     OK_200,
     FORBIDDEN_403,
     NOT_FOUND_404,
-    RESP_STATUS_UNDEFINED,
 } HttpRespStatus;
 
 typedef struct
@@ -21,8 +21,7 @@ typedef struct
 } HttpRespHeader;
 
 Error http_get_resp_header_init(HttpReqHeader*, HttpRespHeader*);
-
-Error http_resp_header_to_string(HttpRespHeader*, char*);
+Error http_resp_header_to_string(HttpRespHeader*, String*);
 
 #if TEST == 1
 void test_http_resp_header();
