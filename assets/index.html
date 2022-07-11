@@ -1,16 +1,44 @@
-<!DOCTYPE html>
+<!DOCTYPE HTML>
 <html>
+<head>
+<style>
+
+#div1, #div2
+{float:left; width:840px; height:55px; margin:10px;padding:10px;border:1px solid #aaaaaa;}
+#drag1 {
+  border-style: none;
+  box-sizing: inherit;
+  vertical-align:middle;
+}
+</style>
+<script>
+
+function allowDrop(ev)
+{
+ev.preventDefault();
+}
+
+function drag(ev)
+{
+ev.dataTransfer.setData("text",ev.target.id);
+}
+
+function drop(ev)
+{
+ev.preventDefault();
+var data=ev.dataTransfer.getData("text");
+ev.target.appendChild(document.getElementById(data));
+}
+
+</script>
+</head>
 <body>
 
-<h2>My First Web Page</h2>
-<p>Try and send large image through the network</p>
+<p>Drag the W3Schools image into the rectangle:</p>
 
-<p id="demo"></p>
-<!-- <img src="LARGE_elevation.jpg" alt="Italian Trulli"> -->
-
-<script>
-document.getElementById("demo").innerHTML = 5 + 6;
-</script>
-
+<div id="div1" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+<div id="div2" ondrop="drop(event)" ondragover="allowDrop(event)">
+<img id="drag1" src="lfs/img_logo.jpg" draggable="true" ondragstart="drag(event)" width="69" height="69">
+</div>
 </body>
 </html>
