@@ -20,8 +20,8 @@ typedef struct
     char actual_location[PATH_MAX];
 } HttpRespHeader;
 
-Error http_get_resp_header_init(HttpReqHeader*, HttpRespHeader*);
-Error http_resp_header_to_string(HttpRespHeader*, String*);
+Error http_get_resp_header_init(const HttpReqHeader*, HttpRespHeader*);
+Error http_resp_header_to_string(const HttpRespHeader*, String*);
 
 #if TEST == 1
 void test_http_resp_header();

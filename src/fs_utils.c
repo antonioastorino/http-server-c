@@ -451,7 +451,7 @@ void test_fs_utils()
         path_string = "test/assets/readme.txt";
         off_t file_size;
         ASSERT(fs_utils_get_file_size(path_string, &file_size) == ERR_ALL_GOOD, "File found.");
-        ASSERT(file_size == 20, "File size correct.");
+        ASSERT(file_size == 27, "File size correct.");
     }
     /**/
 }

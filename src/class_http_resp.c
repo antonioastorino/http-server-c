@@ -22,3 +22,7 @@ Error HttpRespObj_destroy(HttpRespObj* http_resp_obj_p)
     UNUSED(http_resp_obj_p);
     return ERR_ALL_GOOD;
 }
+
+#if TEST == 1
+void test_class_http_resp() {}
+#endif /* TEST == 1 */

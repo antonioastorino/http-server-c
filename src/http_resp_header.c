@@ -6,7 +6,7 @@
 #define ASSETS_DIR "assets"
 
 Error http_get_resp_header_init(
-    HttpReqHeader* http_req_header_p,
+    const HttpReqHeader* http_req_header_p,
     HttpRespHeader* out_http_resp_header_p)
 {
     char assets_path[PATH_MAX]               = {0};
@@ -65,7 +65,7 @@ const char* http_resp_reason_phrase(HttpRespStatus http_resp_status)
 }
 
 Error http_resp_header_to_string(
-    HttpRespHeader* http_resp_header_p,
+    const HttpRespHeader* http_resp_header_p,
     String* out_resp_header_string_obj_p)
 {
     if (http_resp_header_p->status == RESP_STATUS_UNDEFINED)
@@ -98,6 +98,20 @@ void test_http_resp_header()
         ASSERT_EQ("UNDEFINED", http_resp_reason_phrase(http_resp_status), "Correct string");
         http_resp_status = 10;
         ASSERT_EQ("INVALID STATUS", http_resp_reason_phrase(http_resp_status), "Correct string");
+    }
+    PRINT_TEST_TITLE("Separate file paths from parameters in URL");
+    {
+        HttpReqHeader http_req_header;
+        ASSERT(
+            !is_err(http_req_header_init("GET /index.html?param=val\r\n\r\n", &http_req_header)),
+            "HTTP request header created");
+        HttpRespHeader http_resp_header;
+        ASSERT(
+            !is_err(http_get_resp_header_init(&http_req_header, &http_resp_header)),
+            "Response header created.");
+        char resolved_path[PATH_MAX];
+        realpath("assets/index.html", resolved_path);
+        ASSERT_EQ(resolved_path, http_resp_header.actual_location, "Actual location correct");
     }
 }
 #endif

@@ -5,6 +5,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#ifdef __linux__
+#include <sys/sendfile.h>
+#endif /* __linux__ */
+
 static bool g_initialized = false;
 static int g_server_socket;
 static int g_client_socket;

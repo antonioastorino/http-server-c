@@ -6,10 +6,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#ifdef __linux__
-#include <sys/sendfile.h>
-#endif /* __linux__ */
-
 Error HttpReqObj_new(const char* raw_request, HttpReqObj* out_http_req_obj)
 {
     // Split the raw data into header and body.
@@ -52,7 +48,7 @@ Error HttpReqObj_destroy(HttpReqObj* http_req_obj_p)
 }
 
 #if TEST == 1
-void test_class_http()
+void test_class_http_req()
 {
     PRINT_BANNER();
     PRINT_TEST_TITLE("Initialize request");
