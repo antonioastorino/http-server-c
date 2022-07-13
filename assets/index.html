@@ -2,39 +2,50 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta name="generator" content="HTML Tidy for HTML5 for Linux version 5.9.20" />
-  <style>
-  #div1, #div2
-  {
-      float:left;
-      width:840px;
-      height:55px;
-      margin:10px;padding:10px;
-      border:1px solid #aaaaaa;
+    <style>
+    #div1, #div2 {
+        float:left;
+        width:840px;
+        height:55px;
+        margin:10px;padding:10px;
+        border:1px solid #aaaaaa;
   }
   #drag1 {
-  border-style: none;
-  box-sizing: inherit;
-  vertical-align:middle;
+    border-style: none;
+    box-sizing: inherit;
+    vertical-align:middle;
   }
   </style>
   <script>
-  function allowDrop(ev)
-  {
-  ev.preventDefault();
+  function allowDrop(ev) {
+    ev.preventDefault();
   }
 
-  function drag(ev)
-  {
-  ev.dataTransfer.setData("text",ev.target.id);
+  function drag(ev) {
+    ev.dataTransfer.setData("text",ev.target.id);
+ }
+
+  function drop(ev) {
+    ev.preventDefault();
+    var data=ev.dataTransfer.getData("text");
+    ev.target.appendChild(document.getElementById(data));
+  }
+       
+  function yourFunction () {
+     let div2 = document.getElementById("div2");
+     for (let i = 0; i < 3; i++) {
+        const newDiv = document.createElement("div");
+        newDiv.setAttribute("id", `test_id_${i}`);
+        const newContent = document.createTextNode("Hi there and greetings!");
+        newDiv.appendChild(newContent);
+        document.body.insertBefore(newDiv, div2);
+     }
   }
 
-  function drop(ev)
-  {
-  ev.preventDefault();
-  var data=ev.dataTransfer.getData("text");
-  ev.target.appendChild(document.getElementById(data));
-  }
-  </script>
+  window.onload = function() {
+    yourFunction();
+  };
+   </script>
   <title></title>
 </head>
 <body>
