@@ -6,7 +6,8 @@ Error HttpRespObj_new(HttpReqObj* http_req_obj_p, HttpRespObj* out_http_resp_obj
     {
     case METHOD_GET:
     {
-        return http_get_resp_header_init(&http_req_obj_p->header, &out_http_resp_obj_p->header);
+        http_get_resp_header_init(&http_req_obj_p->header, &out_http_resp_obj_p->header);
+        return ERR_ALL_GOOD;
         break;
     }
     default:

@@ -95,11 +95,11 @@ int main()
                 tcp_utils_close_client_socket();
                 return ERR_UNEXPECTED;
             }
-            if (http_resp_obj.header.content_size)
+            if (http_resp_obj.header.content_length)
             {
-                LOG_INFO("Content-Size not zero. Trying to send file.");
+                LOG_INFO("Content-Length not zero. Trying to send file.");
                 if (is_err(tcp_utils_send_file(
-                        http_resp_obj.header.actual_location, http_resp_obj.header.content_size)))
+                        http_resp_obj.header.actual_location, http_resp_obj.header.content_length)))
                 {
                     HttpRespObj_destroy(&http_resp_obj);
                     HttpReqObj_destroy(&http_req_obj);
@@ -134,6 +134,7 @@ int main()
 int main()
 {
     test_http_req_header();
+    test_http_resp_header();
     test_class_http_req();
     test_class_http_resp();
     test_class_string();
