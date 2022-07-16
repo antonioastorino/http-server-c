@@ -150,6 +150,14 @@ void http_get_resp_header_init(
     // It could be an API
 }
 
+void http_post_resp_header_init(
+    const HttpReqHeader* http_req_header_p,
+    HttpRespHeader* out_http_resp_header_p)
+{
+    UNUSED(http_req_header_p);
+    UNUSED(out_http_resp_header_p);
+}
+
 const char* http_resp_reason_phrase(HttpRespStatus http_resp_status)
 {
     switch (http_resp_status)

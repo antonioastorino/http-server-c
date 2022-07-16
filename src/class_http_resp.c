@@ -8,7 +8,11 @@ Error HttpRespObj_new(HttpReqObj* http_req_obj_p, HttpRespObj* out_http_resp_obj
     {
         http_get_resp_header_init(&http_req_obj_p->header, &out_http_resp_obj_p->header);
         return ERR_ALL_GOOD;
-        break;
+    }
+    case METHOD_POST:
+    {
+        http_post_resp_header_init(&http_req_obj_p->header, &out_http_resp_obj_p->header);
+        return ERR_ALL_GOOD;
     }
     default:
         LOG_ERROR("Method not supported.");

@@ -64,6 +64,7 @@ int main()
                 tcp_utils_close_client_socket();
                 return ERR_UNEXPECTED;
             }
+            printf("%s\n", in_buff);
             LOG_TRACE("Input message read.");
             HttpReqObj http_req_obj;
             if (is_err(HttpReqObj_new(in_buff, &http_req_obj)))

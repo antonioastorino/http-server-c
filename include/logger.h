@@ -63,7 +63,7 @@ void get_date_time(char* date_time_str);
         get_date_time(date_time_str);                                                              \
         fprintf(                                                                                   \
             log_err,                                                                               \
-            "[ERROR] %s %s:%d `%s`",                                                               \
+            "[ERROR] %s %s:%d | `%s`",                                                             \
             date_time_str,                                                                         \
             __FILENAME__,                                                                          \
             __LINE__,                                                                              \

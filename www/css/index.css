@@ -1,8 +1,13 @@
-#div1, #div2 { float:left; width:840px; height:55px; margin:10px;padding:10px; border:1px solid #aaaaaa;
-  }
-  #drag1 {
-    border-style: none;
-    box-sizing: inherit;
-    vertical-align:middle;
-  }
- 
+#div1,
+#div2 {
+  width: 55px;
+  height: 55px;
+  margin: 10px;
+  padding: 10px;
+  border: 1px solid #aaaaaa;
+}
+#drag1 {
+  border-style: none;
+  box-sizing: inherit;
+  vertical-align: middle;
+}

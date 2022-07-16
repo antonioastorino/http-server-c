@@ -22,6 +22,7 @@ typedef struct
 } HttpRespHeader;
 
 void http_get_resp_header_init(const HttpReqHeader*, HttpRespHeader*);
+void http_post_resp_header_init(const HttpReqHeader*, HttpRespHeader*);
 Error http_resp_header_to_string(const HttpRespHeader*, String*);
 
 #if TEST == 1
