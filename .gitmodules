@@ -1,0 +1,3 @@
+[submodule "mylibc"]
+	path = mylibc
+	url = git@github.com:antonioastorino/mylibc.git

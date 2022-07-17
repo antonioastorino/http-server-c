@@ -18,10 +18,12 @@ cat /dev/null >src-name.list   # filename no extension
 
 for EXTENSION in ${SRC_EXTENSIONS[@]}; do
     for f in $(find $SRC_PATHS -name "*.${EXTENSION}"); do
-        FILE_NAME=$(basename $f)
-        FILE_NO_EXT=${FILE_NAME%.*}
-        echo "${FILE_NO_EXT}" >>src-name.list
-        echo "$f" >>src-full.list
+        if ! [ "$f" = "$SKIP_SRC" ]; then
+            FILE_NAME=$(basename $f)
+            FILE_NO_EXT=${FILE_NAME%.*}
+            echo "${FILE_NO_EXT}" >>src-name.list
+            echo "$f" >>src-full.list
+        fi
     done
 done
 
