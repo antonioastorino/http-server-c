@@ -111,7 +111,58 @@ bool make_local_path(const char* location_char_p, char out_local_path_char_p[])
     return true;
 }
 
-void http_get_resp_header_init(
+void _http_resp_set_status(HttpRespStatus status, HttpRespHeader* out_http_resp_header_p)
+{
+    out_http_resp_header_p->status = status;
+}
+
+void _http_resp_set_location(const char full_path[], HttpRespHeader* out_http_resp_header_p)
+{
+    memcpy(out_http_resp_header_p->actual_location, full_path, PATH_MAX);
+}
+
+void _http_resp_set_content_length(
+    const off_t content_length,
+    HttpRespHeader* out_http_resp_header_p)
+{
+    out_http_resp_header_p->content_length = content_length;
+}
+
+void _http_resp_set_content_type(const char path[], HttpRespHeader* out_http_resp_header_p)
+{
+    match_content_type(path, &(out_http_resp_header_p->content_type));
+}
+
+void _make_http_resp_403(HttpRespHeader* out_http_resp_header_p)
+{
+    off_t file_size = 0;
+    _http_resp_set_status(FORBIDDEN_403, out_http_resp_header_p);
+    _http_resp_set_location(WWW_FORBIDDEN, out_http_resp_header_p);
+    fs_utils_get_file_size(WWW_FORBIDDEN, &file_size);
+    _http_resp_set_content_length(file_size, out_http_resp_header_p);
+    _http_resp_set_content_type(WWW_FORBIDDEN, out_http_resp_header_p);
+}
+
+void _make_http_resp_404(HttpRespHeader* out_http_resp_header_p)
+{
+    off_t file_size = 0;
+    _http_resp_set_status(NOT_FOUND_404, out_http_resp_header_p);
+    _http_resp_set_location(WWW_NOT_FOUND, out_http_resp_header_p);
+    fs_utils_get_file_size(WWW_NOT_FOUND, &file_size);
+    _http_resp_set_content_length(file_size, out_http_resp_header_p);
+    _http_resp_set_content_type(WWW_NOT_FOUND, out_http_resp_header_p);
+}
+
+void _make_http_resp_200(const char path[], off_t file_size, HttpRespHeader* out_http_resp_header_p)
+{
+    _http_resp_set_status(OK_200, out_http_resp_header_p);
+    _http_resp_set_location(path, out_http_resp_header_p);
+    fs_utils_get_file_size(path, &file_size);
+    _http_resp_set_content_length(file_size, out_http_resp_header_p);
+    _http_resp_set_content_type(path, out_http_resp_header_p);
+}
+
+void http_resp_header_init_GET(
     const HttpReqHeader* http_req_header_p,
     HttpRespHeader* out_http_resp_header_p)
 {
@@ -126,31 +177,34 @@ void http_get_resp_header_init(
     if (make_local_path(location, local_path))
     {
         // It's a path to a file.
+        off_t file_size = 0;
+        LOG_INFO("Found location `%s`.", local_path);
         if (realpath(local_path, resolved_path) == NULL)
         {
             LOG_ERROR("Invalid path `%s`", local_path);
-            out_http_resp_header_p->status = NOT_FOUND_404;
-            memcpy(resolved_path, WWW_NOT_FOUND, sizeof(WWW_NOT_FOUND));
+            _make_http_resp_404(out_http_resp_header_p);
         }
-        off_t file_size;
-        if (is_err(fs_utils_get_file_size(resolved_path, &file_size)))
+        else if (is_err(fs_utils_get_file_size(resolved_path, &file_size)))
         {
             LOG_ERROR("Could not retrieve file size");
-            out_http_resp_header_p->status         = FORBIDDEN_403;
-            out_http_resp_header_p->content_length = 0;
-            memcpy(resolved_path, WWW_FORBIDDEN, sizeof(WWW_FORBIDDEN));
+            _make_http_resp_403(out_http_resp_header_p);
         }
-        memcpy(out_http_resp_header_p->actual_location, resolved_path, PATH_MAX);
-        out_http_resp_header_p->content_length = file_size;
-        match_content_type(resolved_path, &(out_http_resp_header_p->content_type));
-        out_http_resp_header_p->status = OK_200;
+        else
+        {
+            _make_http_resp_200(resolved_path, file_size, out_http_resp_header_p);
+        }
     }
-    // TODO: refactor to destroy in one location.
+    else
+    {
+        //        is_endpoint(location)
+        LOG_ERROR("API `%s` not handled yet.", local_path);
+        _make_http_resp_404(out_http_resp_header_p);
+    }
     StringArray_destroy(&parsed_path_string_array_obj);
     // It could be an API
 }
 
-void http_post_resp_header_init(
+void http_resp_header_init_POST(
     const HttpReqHeader* http_req_header_p,
     HttpRespHeader* out_http_resp_header_p)
 {
@@ -233,7 +287,7 @@ void test_http_resp_header()
             !is_err(http_req_header_init("GET /index.html?param=val\r\n\r\n", &http_req_header)),
             "HTTP request header created");
         HttpRespHeader http_resp_header;
-        http_get_resp_header_init(&http_req_header, &http_resp_header);
+        http_resp_header_init_GET(&http_req_header, &http_resp_header);
         char resolved_path[PATH_MAX];
         realpath("www/index.html", resolved_path);
         ASSERT_EQ(resolved_path, http_resp_header.actual_location, "Actual location correct.");

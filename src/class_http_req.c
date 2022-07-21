@@ -53,7 +53,7 @@ void test_class_http_req()
     PRINT_BANNER();
     PRINT_TEST_TITLE("Initialize request");
     {
-        HttpReqObj req_obj;
+        HttpReqObj_empty(req_obj);
         const char* req_raw
             = "POST /some/path VERSION\r\ncontent-type: some_value\r\n\r\nsome body\r\n";
         ASSERT(HttpReqObj_new(req_raw, &req_obj) == ERR_ALL_GOOD, "Valid request.");
@@ -61,6 +61,7 @@ void test_class_http_req()
         ASSERT_EQ(req_obj.header.location, "/some/path", "Path stored properly.");
         ASSERT(req_obj.header.version == VERSION_VALID, "Version correct.");
         ASSERT_EQ(req_obj.body_string_obj.str, "some body\r\n", "Body correct");
+        HttpReqObj_destroy(&req_obj);
         HttpReqObj_destroy(&req_obj);
     }
 }

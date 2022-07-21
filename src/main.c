@@ -8,14 +8,8 @@
 #include "fs_utils.h"
 #include "http_resp_header.h"
 #include "tcp_utils.h"
-#include <arpa/inet.h>
-#include <fcntl.h>
-#include <netdb.h>
 #include <pthread.h>
 #include <signal.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/wait.h>
 #include <unistd.h>
 
 void* watchdog(void* pid_p)
@@ -48,7 +42,7 @@ int main()
         if (is_err(tcp_utils_accept()))
         {
             LOG_ERROR("Failed to accept connection.");
-            continue;
+            return -1;
         }
 
         int pid = fork();
@@ -58,63 +52,53 @@ int main()
             tcp_utils_close_server_socket();
             // receive message from the client
             char in_buff[TCP_MAX_MSG_LEN] = {0};
-            if (is_err(tcp_utils_read(in_buff)))
+            Error ret_result              = ERR_ALL_GOOD;
+            HttpReqObj_empty(http_req_obj);
+            HttpRespObj_empty(http_resp_obj);
+            String_empty(http_resp_header_string_obj);
+            if (is_err(ret_result = tcp_utils_read(in_buff)))
             {
-                LOG_ERROR("Failed to read input message.");
-                tcp_utils_close_client_socket();
-                return ERR_UNEXPECTED;
+                LOG_ERROR("[CHILD] Failed to read input message.");
             }
-            printf("%s\n", in_buff);
-            LOG_TRACE("Input message read.");
-            HttpReqObj http_req_obj;
-            if (is_err(HttpReqObj_new(in_buff, &http_req_obj)))
+            else if (is_err(ret_result = HttpReqObj_new(in_buff, &http_req_obj)))
             {
-                tcp_utils_close_client_socket();
-                return ERR_UNEXPECTED;
+                LOG_ERROR("[CHILD] Failed to create request object.");
             }
-            HttpRespObj http_resp_obj;
-            if (is_err(HttpRespObj_new(&http_req_obj, &http_resp_obj)))
+            else if (is_err(ret_result = HttpRespObj_new(&http_req_obj, &http_resp_obj)))
             {
-                HttpReqObj_destroy(&http_req_obj);
-                tcp_utils_close_client_socket();
-                return ERR_UNEXPECTED;
+                LOG_ERROR("[CHILD] Failed to create response object.");
             }
-            String http_resp_header_string_obj;
-            if (is_err(http_resp_header_to_string(
-                    &http_resp_obj.header, &http_resp_header_string_obj)))
+            else if (is_err(
+                         ret_result = http_resp_header_to_string(
+                             &http_resp_obj.header, &http_resp_header_string_obj)))
             {
-                HttpRespObj_destroy(&http_resp_obj);
-                HttpReqObj_destroy(&http_req_obj);
-                tcp_utils_close_client_socket();
-                return ERR_UNEXPECTED;
+                LOG_ERROR("[CHILD] Failed to create response object.");
             }
-            if (is_err(tcp_utils_write(http_resp_header_string_obj.str)))
+            else if (is_err(ret_result = tcp_utils_write(http_resp_header_string_obj.str)))
             {
-                HttpRespObj_destroy(&http_resp_obj);
-                HttpReqObj_destroy(&http_req_obj);
-                String_destroy(&http_resp_header_string_obj);
-                tcp_utils_close_client_socket();
-                return ERR_UNEXPECTED;
+                LOG_ERROR("[CHILD] Failed to send header.");
             }
-            if (http_resp_obj.header.content_length)
+            else if (!http_resp_obj.header.content_length)
             {
-                LOG_INFO("Content-Length not zero. Trying to send file.");
-                if (is_err(tcp_utils_send_file(
-                        http_resp_obj.header.actual_location, http_resp_obj.header.content_length)))
-                {
-                    HttpRespObj_destroy(&http_resp_obj);
-                    HttpReqObj_destroy(&http_req_obj);
-                    String_destroy(&http_resp_header_string_obj);
-                    tcp_utils_close_client_socket();
-                    return ERR_UNEXPECTED;
-                }
+                LOG_INFO("[CHILD] Content-Length not zero. Trying to send file.");
+            }
+            else if (is_err(
+                         ret_result = tcp_utils_send_file(
+                             http_resp_obj.header.actual_location,
+                             http_resp_obj.header.content_length)))
+            {
+                LOG_ERROR("[CHILD] Failed to send payload.");
+            }
+            else
+            {
+                LOG_TRACE("[CHILD] Input message read.");
             }
             HttpRespObj_destroy(&http_resp_obj);
             HttpReqObj_destroy(&http_req_obj);
             String_destroy(&http_resp_header_string_obj);
             tcp_utils_close_client_socket();
 
-            return ERR_ALL_GOOD;
+            return ret_result;
         }
         else
         {

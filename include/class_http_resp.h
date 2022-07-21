@@ -13,6 +13,8 @@ typedef struct
 Error HttpRespObj_new(HttpReqObj*, HttpRespObj*);
 Error HttpRespObj_destroy(HttpRespObj*);
 
+#define HttpRespObj_empty(var_name) HttpRespObj var_name
+
 #if TEST == 1
 void test_class_http_resp();
 #endif

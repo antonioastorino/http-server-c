@@ -15,6 +15,9 @@ typedef struct
 Error HttpReqObj_new(const char*, HttpReqObj*);
 Error HttpReqObj_destroy(HttpReqObj*);
 
+#define HttpReqObj_empty(var_name)                                                                 \
+    String_empty(var_name##body);                                                                  \
+    HttpReqObj var_name = {.body_string_obj = var_name##body}
 #if TEST == 1
 void test_class_http_req();
 #endif /* TEST == 1 */
