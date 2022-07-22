@@ -150,6 +150,8 @@ while read -r SRC_FULL_PATH; do
             pf "\n\t${BUILD_DIR}/${HEADER_NO_EXT}.o "
         fi
     done
+    pf "\\"
+    pf "\n\t${APP_ERROR} "
 
     pf "\n\t${COMPILER} \$(INC) \$(FLAGS) -O\$(OPT) -c \$< -o \$@\n"
     pf "\n"

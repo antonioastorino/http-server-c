@@ -1,9 +1,11 @@
 #!/bin/bash
-APP_NAME="tcp-server.app"
+APP_NAME="http-server.app"
 ARTIFACT_FOLDER="test/artifacts"
 LOG_FILE_ERR="${ARTIFACT_FOLDER}/err.log"
 COMMON_HEADER="mylibc/include/common.h"
-FLAGS="-Wall -Wextra -std=c11"
+COMMON_ERROR="mylibc/include/error.h"
+APP_ERROR="include/app_error.h"
+FLAGS="-Wall -Wextra -std=c11 -include ${APP_ERROR}"
 COMPILER="clang"
 LIB=""
 BUILD_DIR="build"

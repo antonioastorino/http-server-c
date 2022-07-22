@@ -1,0 +1,6 @@
+#ifndef APP_ERROR_H
+#define APP_ERROR_H
+
+#define __APP_DEFINED__ ERR_HTTP_UNSUPPORTED_METHOD,
+
+#endif /* APP_ERROR_H */
