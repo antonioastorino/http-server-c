@@ -11,3 +11,20 @@
   box-sizing: inherit;
   vertical-align: middle;
 }
+
+#main {
+  background-color: #e7e9eb;
+  float: left;
+  width: 100%;
+  margin-right: -300px;
+}
+
+
+#right-frame {
+  background-color: #e7e9eb;
+  width: 300px;
+  float: left;
+  height: 100vh;
+  overflow-y: scroll;
+  padding-top: 20px;
+}

@@ -12,6 +12,15 @@ function drop(ev) {
   ev.target.appendChild(document.getElementById(data));
 }
 
+function load() {
+  const xhttp = new XMLHttpRequest();
+  xhttp.onload = function () {
+    document.getElementById("right-frame").innerText = this.responseText;
+  };
+  xhttp.open("GET", "/assets/sample.txt");
+  xhttp.send();
+}
+
 function generateInput() {
   let input_div = document.getElementById("multiple-input");
   for (let i = 0; i < 4; i++) {

@@ -5,8 +5,8 @@
 #define HTTP_RESP_VERSION "HTTP/1.0"
 #define ASSETS_DIR "assets"
 #define WWW_DIR "www"
-#define WWW_NOT_FOUND WWW_DIR "/not_found.html"
-#define WWW_FORBIDDEN WWW_DIR "/forbidden.html"
+#define WWW_NOT_FOUND WWW_DIR "/pages/not_found.html"
+#define WWW_FORBIDDEN WWW_DIR "/pages/forbidden.html"
 
 typedef enum
 {
@@ -95,7 +95,7 @@ FileExtension match_content_type(const char* path_char_p, char** out_content_typ
 
 bool make_local_path(const char* location_char_p, char out_local_path_char_p[])
 {
-    if (strcmp(location_char_p, "/") == 0)
+    if (strcmp(location_char_p, "/") == 0 || strcmp(location_char_p, "/index.html") == 0)
     {
         LOG_TRACE("Homepage requested.");
         sprintf(out_local_path_char_p, "%s/index.html", WWW_DIR);
@@ -170,7 +170,7 @@ void http_resp_header_init_GET(
     out_http_resp_header_p->status = RESP_STATUS_UNDEFINED;
     // Set the file size to zero. This is used in case there is no file to send because not
     // requested or because there was an error.
-    out_http_resp_header_p->content_length   = 0;
+        out_http_resp_header_p->content_length   = 0;
     StringArray parsed_path_string_array_obj = StringArray_new(http_req_header_p->location, "?");
     const char* location                     = parsed_path_string_array_obj.str_array_char_p[0];
     char resolved_path[PATH_MAX];
