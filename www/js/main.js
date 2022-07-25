@@ -21,6 +21,16 @@ function load() {
   xhttp.send();
 }
 
+function changeView(ev) {
+  let frames = document.getElementsByClassName("supbage");
+  frames.forEach((elem) => {
+    elem.style.display = "block";
+  });
+  if (ev.target.id == "button-configure") {
+    document.getElementById("iframe-configure").style.display = "block";
+  }
+}
+
 function generateInput() {
   let input_div = document.getElementById("multiple-input");
   for (let i = 0; i < 4; i++) {
@@ -37,6 +47,7 @@ function generateInput() {
     input_div.appendChild(new_div);
   }
 }
+
 window.onload = function () {
   generateInput();
 };

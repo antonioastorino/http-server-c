@@ -19,6 +19,25 @@
   margin-right: -300px;
 }
 
+div#subpage-viewer {
+  float: left;
+  width: 100%;
+  height: 100%;
+  background-color: #afafaf;
+  min-width: 800px;
+}
+
+#div-subpage {
+  position: relative;
+  padding: 20px;
+  display: block;
+  border: solid #aaabbc;
+}
+
+iframe.subpage {
+  width: 100%;
+  display: none;
+}
 
 #right-frame {
   background-color: #e7e9eb;

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Configuration page</title>
+    <link rel="icon" type="image/x-icon" href="/img/favicon.ico" />
+  </head>
+  <body>
+    <div id="main">
+      <h1>configure</h1>
+      <p>Drag</p>
+      <div id="div1" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+      <div id="div2" ondrop="drop(event)" ondragover="allowDrop(event)">
+        <img
+          alt="logo"
+          src="/img/logo.jpeg"
+          draggable="true"
+          ondragstart="drag(event)"
+          width="69"
+          height="69"
+          id="drag1"
+        />
+      </div>
+      <div>
+        <iframe name="votar" style="display: none" id="votar"></iframe>
+        <form
+          action="api/write"
+          method="post"
+          id="signup"
+          name="signup"
+          target="votar"
+        >
+          <div id="multiple-input" class="field"></div>
+          <button type="submit">POST</button>
+        </form>
+      </div>
+      <div>
+        <button type="button" onclick="load()">Load</button>
+      </div>
+    </div>
+    <div id="right-frame"></div>
+  </body>
+</html>

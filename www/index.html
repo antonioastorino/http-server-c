@@ -8,43 +8,34 @@
       type="text/css"
     />
     <link rel="icon" type="image/x-icon" href="/img/favicon.ico" />
+    <link rel="configure-page" type="text/html" href="/pages/configure.html" />
     <script src="/js/main.js" type="text/javascript"></script>
     <title>Home</title>
   </head>
   <body>
+    <div id="banner">
+      <button type="button" id="button-configure" onclick="changeView(event)">
+        Configure
+      </button>
+      <button type="button" id="button-info" onclick="changeView(event)">
+        Info
+      </button>
+    </div>
     <div id="container">
-      <div id="main">
-        <p>Drag</p>
-        <div id="div1" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-        <div id="div2" ondrop="drop(event)" ondragover="allowDrop(event)">
-          <img
-            alt="logo"
-            src="img/logo.jpeg"
-            draggable="true"
-            ondragstart="drag(event)"
-            width="69"
-            height="69"
-            id="drag1"
-          />
-        </div>
-        <div>
-          <iframe name="votar" style="display: none" id="votar"></iframe>
-          <form
-            action="api/write"
-            method="post"
-            id="signup"
-            name="signup"
-            target="votar"
-          >
-            <div id="multiple-input" class="field"></div>
-            <button type="submit">POST</button>
-          </form>
-        </div>
-        <div>
-          <button type="button" onclick="load()">Load</button>
+      <div id="subpage-viewer">
+        <div id="div-subpage">
+          <iframe
+            class="subpage"
+            src="/pages/configure.html"
+            id="iframe-configure"
+          ></iframe>
+          <iframe
+            class="subpage"
+            src="/pages/info.html"
+            id="iframe-info"
+          ></iframe>
         </div>
       </div>
-      <div id="right-frame"></div>
     </div>
   </body>
 </html>
