@@ -14,16 +14,6 @@ div#subpage-viewer {
 
 iframe.subpage {
   width: 100%;
-  display: none;
-}
-
-#right-frame {
-  background-color: #e7e9eb;
-  width: 300px;
-  float: left;
-  height: 100vh;
-  overflow-y: scroll;
-  padding-top: 20px;
   height: 100%;
   display: none;
 }

@@ -1,8 +1,8 @@
 #right-frame {
   background-color: #e7e9eb;
-  width: 300px;
+  width: 500px;
   float: left;
-  height: 100vh;
+  height: 100%;
   overflow-y: scroll;
   padding-top: 20px;
 }
