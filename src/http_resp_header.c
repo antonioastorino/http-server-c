@@ -15,6 +15,7 @@ typedef enum
     dot_js,
     dot_jpg,
     dot_ico,
+    dot_txt,
     dot_unrecognized,
     no_extension,
 } FileExtension;
@@ -56,6 +57,11 @@ static ContentTypeMapItem content_type_map[] = {
         .extension_char_p    = "ico",
         .content_type_char_p = "image/x-icon",
         .extension_enum      = dot_ico,
+    },
+    {
+        .extension_char_p    = "txt",
+        .content_type_char_p = "text/plain",
+        .extension_enum      = dot_txt,
     },
 };
 
@@ -170,7 +176,7 @@ void http_resp_header_init_GET(
     out_http_resp_header_p->status = RESP_STATUS_UNDEFINED;
     // Set the file size to zero. This is used in case there is no file to send because not
     // requested or because there was an error.
-        out_http_resp_header_p->content_length   = 0;
+    out_http_resp_header_p->content_length   = 0;
     StringArray parsed_path_string_array_obj = StringArray_new(http_req_header_p->location, "?");
     const char* location                     = parsed_path_string_array_obj.str_array_char_p[0];
     char resolved_path[PATH_MAX];
