@@ -4,5 +4,6 @@ build
 *.swp
 *.swo
 *.bak
+.DS_Store
 test/artifacts 
 Makefile
