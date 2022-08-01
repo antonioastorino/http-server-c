@@ -14,4 +14,5 @@ function changeView(ev) {
 window.onload = function () {
   document.getElementById("subpage-viewer").style.height = "100vh";
   document.getElementById("subpage-viewer").style.bottom = "-30px";
+  document.getElementById("iframe-configure").style.display = "block";
 };

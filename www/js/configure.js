@@ -27,6 +27,7 @@ class Line {
     this.tips = tips;
   }
   draw(ctx) {
+    ctx.beginPath();
     ctx.moveTo(this.start.x, this.start.y);
     ctx.lineTo(this.end.x, this.end.y);
     ctx.stroke();
