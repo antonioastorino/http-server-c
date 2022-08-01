@@ -3,6 +3,15 @@ var connections = [];
 const LINE_IN = 254;
 const LINE_OUT = 255;
 const NUMBER_OF_LINES = 8;
+const v_space = 100;
+const h_space = 20;
+const left_line_length = 100;
+const right_line_length = 200;
+const top_margin = 10;
+const left_line_left_margin = 10;
+const right_line_left_margin =
+  left_line_left_margin + left_line_length + h_space;
+const vert_line_spacing = 10;
 
 class Point {
   constructor(x, y) {
@@ -85,17 +94,32 @@ function updateCanvas() {
   let ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   initCanvas();
+  connections = [];
+  for (let line_nr = 0; line_nr < NUMBER_OF_LINES; line_nr++) {
+    console.log(line_nr);
+    input_value = document.getElementById(`input_${line_nr}`).value;
+    // Check that the end-point exists
+    let next_vert_line_x_pos =
+      (connections.length + 1) * vert_line_spacing + right_line_left_margin;
+    if (document.getElementById("input_" + input_value)) {
+      input_value_number = Number(input_value);
+      connections.push(
+        new Line(
+          new Point(
+            next_vert_line_x_pos,
+            top_margin + input_value_number * v_space
+          ),
+          new Point(next_vert_line_x_pos, top_margin + line_nr * v_space)
+        )
+      );
+    }
+  }
+  connections.forEach((elem) => {
+    elem.draw(ctx);
+  });
 }
 
 function initLines() {
-  const v_space = 100;
-  const h_space = 20;
-  const left_line_length = 100;
-  const right_line_length = 200;
-  const top_margin = 10;
-  const left_line_left_margin = 10;
-  const right_line_left_margin =
-    left_line_left_margin + left_line_length + h_space;
   for (let line_nr = 0; line_nr < NUMBER_OF_LINES; line_nr++) {
     new_left_line = new Line(
       new Point(left_line_left_margin, top_margin + line_nr * v_space),
