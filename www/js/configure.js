@@ -3,7 +3,7 @@ var connections = [];
 const LINE_IN = 254;
 const LINE_OUT = 255;
 const NUMBER_OF_LINES = 8;
-const v_space = 100;
+const v_space = 40;
 const h_space = 20;
 const left_line_length = 100;
 const right_line_length = 200;
@@ -32,34 +32,43 @@ class Line {
   }
 }
 
-function labelTextUpdate(ev) {
-  let value = ev.target.value.trim();
-  let id = ev.target.id;
-  let number_id = id.split("_")[1].trim();
-  // Current index
-  if (value == "OUT") {
-    // Look for all the input with value == id and replace set their value to OUT
-    for (let line_nr = 0; line_nr < NUMBER_OF_LINES; line_nr++) {
-      let input_elem = document.getElementById("input_" + line_nr.toString());
-      if (input_elem.value == number_id) {
+function attachAllOutputsToInputs() {
+  // Set everything that is not a number to OUT
+  for (let line_nr = 0; line_nr < NUMBER_OF_LINES; line_nr++) {
+    let input_elem = document.getElementById("input_" + line_nr.toString());
+    pointed_element = document.getElementById("input_" + input_elem.value);
+    if (!pointed_element) {
+      input_elem.value = "OUT";
+    }
+  }
+  
+  // Assign "IN" if connected
+  for (let line_nr = 0; line_nr < NUMBER_OF_LINES; line_nr++) {
+    let input_elem = document.getElementById("input_" + line_nr.toString());
+    if (input_elem.value === line_nr.toString()) {
+      input_elem.value = "OUT";
+    }
+    pointed_element = document.getElementById("input_" + input_elem.value);
+    if (pointed_element) {
+      if (pointed_element.value === "OUT" || pointed_element.value === "IN") {
+        pointed_element.value = "IN";
+      } else {
+        // Prevent removing a connection
+        alert(`Cannot connect out ${line_nr} to out ${input_elem.value}`);
         input_elem.value = "OUT";
       }
     }
-    return;
   }
-  let corresponding_input = document.getElementById("input_" + value);
-  if (corresponding_input) {
-    current_value = corresponding_input.value.trim();
-    // If the value was a number, remove the connection
-    let connected_input = document.getElementById("input_" + current_value);
-    if (connected_input) {
-      connected_input.value = "OUT";
-    }
-    corresponding_input.value = "IN";
-  } else {
-    ev.target.value = "";
-  }
+}
 
+function labelTextUpdate(ev) {
+  let value = ev.target.value.trim();
+  ev.target.value = value;
+  let id = ev.target.id;
+  let number_id = id.split("_")[1].trim();
+  // Current index
+  // Look for all the input with value == id and replace set their value to OUT
+  attachAllOutputsToInputs();
   updateCanvas();
 }
 
@@ -96,7 +105,6 @@ function updateCanvas() {
   initCanvas();
   connections = [];
   for (let line_nr = 0; line_nr < NUMBER_OF_LINES; line_nr++) {
-    console.log(line_nr);
     input_value = document.getElementById(`input_${line_nr}`).value;
     // Check that the end-point exists
     let next_vert_line_x_pos =
