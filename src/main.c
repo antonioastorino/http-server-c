@@ -8,28 +8,51 @@
 #include "fs_utils.h"
 #include "http_resp_header.h"
 #include "tcp_utils.h"
-#include <pthread.h>
 #include <signal.h>
+#include <stdlib.h> /* contains exit() and getenv() */
+#include <sys/wait.h>
 #include <unistd.h>
 
-void* watchdog(void* pid_p)
+#define MAX_ATTEMPTS 100
+
+void wait_with_timeout(int pid)
 {
-    pid_t pid = *((pid_t*)pid_p);
-    LOG_TRACE("Waiting for child `%d` to finish", pid);
-    sleep(HTTP_REQ_TIMEOUT);
-    LOG_TRACE("Checking");
-    int process_exit_status;
-    if (waitpid(pid, &process_exit_status, WNOHANG) == 0)
+    LOG_INFO("Waiting for process with ID `%d` to be done.", pid);
+    for (uint8_t attempt = 0; attempt <= MAX_ATTEMPTS; attempt++)
     {
-        LOG_WARNING("The process with ID `%d` is not done yet. Killing it.", pid);
-        kill(pid, SIGTERM);
+        // TODO: replace usleep() with nanosleep();
+        usleep(50000);
+        int process_exit_status;
+        int watched_pid = waitpid(pid, &process_exit_status, WNOHANG);
+        if (watched_pid == 0)
+        {
+            LOG_WARNING("Attempt: `%d` - The process with ID `%d` is not done yet.", attempt, pid);
+            if (attempt == MAX_ATTEMPTS)
+            {
+                LOG_WARNING("Timer expired. Killing PID `%d`.", pid);
+                kill(pid, SIGTERM);
+                usleep(20000);
+                if (waitpid(pid, &process_exit_status, WNOHANG) != pid)
+                {
+                    LOG_ERROR("The process with ID `%d` is a zombie.", pid);
+                }
+                return;
+            }
+        }
+        else if (watched_pid == -1)
+        {
+            LOG_PERROR("waitpid() failed while waiting for `%d`.", pid);
+            return;
+        }
+        else
+        {
+            LOG_INFO(
+                "Child `%d` done. Exited with status `%d`.", pid, WEXITSTATUS(process_exit_status));
+            return;
+        }
     }
-    else
-    {
-        LOG_TRACE("Child done. Exited with status `%d`.", WEXITSTATUS(process_exit_status));
-    }
-    pthread_exit(NULL);
 }
+
 Error handle_request()
 {
     char in_buff[TCP_MAX_MSG_LEN] = {0};
@@ -59,9 +82,9 @@ Error handle_request()
     {
         LOG_ERROR("[CHILD] Failed to send header.");
     }
-    else if (!http_resp_obj.header.content_length)
+    else if (http_resp_obj.header.content_length == 0)
     {
-        LOG_INFO("[CHILD] Content-Length not zero. Trying to send file.");
+        LOG_INFO("[CHILD] Content-Length zero. Nothing to send.");
     }
     else if (is_err(
                  ret_result = tcp_utils_send_file(
@@ -71,7 +94,7 @@ Error handle_request()
     }
     else
     {
-        LOG_TRACE("[CHILD] Input message read.");
+        LOG_TRACE("[CHILD] Done.");
     }
     HttpRespObj_destroy(&http_resp_obj);
     HttpReqObj_destroy(&http_req_obj);
@@ -79,10 +102,24 @@ Error handle_request()
     return ret_result;
 }
 #if TEST == 0
-int main()
+int main(int argc, char* argv[])
 {
-    return_on_err(tcp_utils_server_init());
-
+    if (argc == 2)
+    {
+        if (strncmp(argv[1], "-v\0", 3) == 0)
+        {
+            printf("APP_VERSION: XXX");
+            return 0;
+        }
+    }
+    else if (argc != 1)
+    {
+        printf("Invalid parameters\n");
+        return ERR_INVALID;
+    }
+    char* logger_out_file_str = "/tmp/app.log";
+    logger_init(logger_out_file_str, logger_out_file_str);
+    return_on_err(tcp_utils_server_init(8081));
     LOG_INFO("Server running");
     while (1)
     {
@@ -102,7 +139,6 @@ int main()
         {
             // Child process
             tcp_utils_close_server_socket();
-
             Error ret_result = handle_request();
             tcp_utils_close_client_socket();
 
@@ -112,24 +148,26 @@ int main()
         {
             // Parent process
             tcp_utils_close_client_socket();
-            pthread_t t1;
-            if (pthread_create(&t1, NULL, watchdog, &pid) == -1)
-            {
-                LOG_ERROR("Failed to create request watchdog. Killing PID `%d`", pid);
-                kill(pid, SIGKILL);
-            }
+            wait_with_timeout(pid);
         }
     }
 
     return ERR_ALL_GOOD;
 }
 #elif TEST == 1
+// void test_api_get();
+// void test_api_post();
+// void test_api_common();
 int main()
 {
+    logger_init(NULL, NULL);
     test_http_req_header();
     test_http_resp_header();
     test_class_http_req();
     test_class_http_resp();
+    //    test_api_get();
+    //    test_api_post();
+    //    test_api_common();
 }
 #else
 #error "TEST must be 0 or 1"

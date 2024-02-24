@@ -1,6 +1,10 @@
 #include "class_string_array.h"
 #include "fs_utils.h"
 #include "http_resp_header.h"
+#ifndef __linux__
+#include <sys/param.h>
+#include <stdlib.h>
+#endif /* __linux__ */
 
 #define HTTP_RESP_VERSION "HTTP/1.0"
 #define ASSETS_DIR "assets"
