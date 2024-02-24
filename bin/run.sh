@@ -20,6 +20,22 @@ if [ "${MODE}" = "DEBUG" ]; then
     OPT_LEVEL=0 # force no optimization in debug mode
 fi
 
+function f_setup_for_release() {
+    echo "Setting up the program for release"
+    [ $(grep -c '^#define TEST 1' "${BD}/${COMMON_HEADER}") -eq 1 ] &&
+        sed -i.bak 's/^#define TEST 1/#define TEST 0/g' "${BD}/${COMMON_HEADER}"
+    [ $(grep -c '^#define MEMORY_CHECK 1' "${BD}/${COMMON_HEADER}") -eq 1 ] &&
+        sed -i.bak 's/^#define MEMORY_CHECK 1/#define MEMORY_CHECK 0/g' "${BD}/${COMMON_HEADER}"
+}
+
+function f_setup_for_test_or_debug() {
+    echo "Setting up the program for debugging or testing"
+    [ $(grep -c '^#define TEST 0' "${BD}/${COMMON_HEADER}") -eq 1 ] &&
+        sed -i.bak 's/^#define TEST 0/#define TEST 1/g' "${BD}/${COMMON_HEADER}"
+    [ $(grep -c '^#define MEMORY_CHECK 0' "${BD}/${COMMON_HEADER}") -eq 1 ] &&
+        sed -i.bak 's/^#define MEMORY_CHECK 0/#define MEMORY_CHECK 1/g' "${BD}/${COMMON_HEADER}"
+}
+
 function analyze_mem() {
     echo "Memory report analysis started."
     echo
@@ -64,24 +80,15 @@ fi
 
 echo "Running"
 if [ "${MODE}" = "TEST" ] || [ "${MODE}" = "DEBUG" ]; then
-    [ $(grep -c '^#define TEST 0' "${BD}/${COMMON_HEADER}") -eq 1 ] &&
-        sed -i.bak 's/^#define TEST 0/#define TEST 1/g' "${BD}/${COMMON_HEADER}"
-    [ $(grep -c '^#define MEMORY_CHECK 0' "${BD}/${COMMON_HEADER}") -eq 1 ] &&
-        sed -i.bak 's/^#define MEMORY_CHECK 0/#define MEMORY_CHECK 1/g' "${BD}/${COMMON_HEADER}"
-
+    set +e
+    f_setup_for_test_or_debug
+    set -e
     mkdir -p /tmp/pointers
     # Set up dir entries for testing.
-    mkdir -p "${ARTIFACT_FOLDER}/empty/" \
-        "${ARTIFACT_FOLDER}/non-empty/inner/inner_l2" \
-        "${ARTIFACT_FOLDER}/non-empty-0/inner/inner_l2" \
-        "${ARTIFACT_FOLDER}/empty-0"
-
-    touch "${ARTIFACT_FOLDER}/non-empty/inner/file.txt"
-    touch "${ARTIFACT_FOLDER}/non-empty/inner/inner_l2/file.txt"
-    touch "${ARTIFACT_FOLDER}/delete_me.txt"
-    touch "${ARTIFACT_FOLDER}/delete_me_2.txt"
+    mkdir -p "${ARTIFACT_FOLDER}"
 
     make MODE=TEST OPT=${OPT_LEVEL} 2>&1
+    f_setup_for_release
     if [ "${MODE}" = "TEST" ]; then
         # Remove previous logs.
         ./"${BUILD_DIR}/${APP_NAME}" 2>"${LOG_FILE_ERR}"
@@ -109,11 +116,9 @@ if [ "${MODE}" = "TEST" ] || [ "${MODE}" = "DEBUG" ]; then
         lldb ./"${BUILD_DIR}/${APP_NAME}"
     fi
 elif [ "${MODE}" = "BUILD" ] || [ "${MODE}" = "" ]; then
-    [ $(grep -c '^#define TEST 1' "${BD}/${COMMON_HEADER}") -eq 1 ] &&
-        sed -i.bak 's/^#define TEST 1/#define TEST 0/g' "${BD}/${COMMON_HEADER}"
-    [ $(grep -c '^#define MEMORY_CHECK 1' "${BD}/${COMMON_HEADER}") -eq 1 ] &&
-        sed -i.bak 's/^#define MEMORY_CHECK 1/#define MEMORY_CHECK 0/g' "${BD}/${COMMON_HEADER}"
-
+    set +e
+    f_setup_for_release
+    set -e
     make OPT=${OPT_LEVEL} 2>&1
 else
     echo "Allowed modes:"
