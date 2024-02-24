@@ -1,0 +1,16 @@
+#ifndef HTTP_RESP_STATUS_H
+#define HTTP_RESP_STATUS_H
+
+typedef enum
+{
+    RESP_STATUS_UNDEFINED = 0,
+    OK_200 = 200,
+    NO_CONTENT_204 = 204,
+    FORBIDDEN_403 = 403,
+    NOT_FOUND_404 = 404,
+    INTERNAL_SERVER_ERROR_500 = 500,
+    SERVICE_UNAVAILABLE_503 = 503,
+    GENERIC_599 = 599,
+} HttpRespStatus;
+
+#endif /* HTTP_RESP_STATUS_H */

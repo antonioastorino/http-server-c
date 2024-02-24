@@ -11,7 +11,10 @@ Error HttpRespObj_new(HttpReqObj* http_req_obj_p, HttpRespObj* out_http_resp_obj
     }
     case METHOD_POST:
     {
-        http_resp_header_init_POST(&http_req_obj_p->header, &out_http_resp_obj_p->header);
+        http_resp_header_init_POST(
+            &http_req_obj_p->header,
+            &http_req_obj_p->body_string_obj,
+            &out_http_resp_obj_p->header);
         break;
     }
     default:

@@ -2,15 +2,8 @@
 #define HTTP_RESP_HEADER
 #include "common.h"
 #include "http_req_header.h"
+#include "http_resp_status.h"
 #define REASON_PHRASE_LENGTH (64)
-
-typedef enum
-{
-    RESP_STATUS_UNDEFINED,
-    OK_200,
-    FORBIDDEN_403,
-    NOT_FOUND_404,
-} HttpRespStatus;
 
 typedef struct
 {
@@ -22,9 +15,8 @@ typedef struct
 } HttpRespHeader;
 
 void http_resp_header_init_GET(const HttpReqHeader*, HttpRespHeader*);
-void http_resp_header_init_POST(const HttpReqHeader*, HttpRespHeader*);
+void http_resp_header_init_POST(const HttpReqHeader*, const String*, HttpRespHeader*);
 Error http_resp_header_to_string(const HttpRespHeader*, String*);
-
 
 #if TEST == 1
 void test_http_resp_header();

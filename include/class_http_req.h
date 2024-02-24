@@ -12,9 +12,10 @@ typedef struct
     String body_string_obj;
 } HttpReqObj;
 
-Error HttpReqObj_new(const char*, HttpReqObj*);
+Error _HttpReqObj_new(const char* file, const int line, const char*, HttpReqObj*);
 Error HttpReqObj_destroy(HttpReqObj*);
 
+#define HttpReqObj_new(param1, param2) _HttpReqObj_new(__FILE__, __LINE__, param1, param2)
 #define HttpReqObj_empty(var_name)                                                                 \
     String_empty(var_name##body);                                                                  \
     HttpReqObj var_name = {.body_string_obj = var_name##body}

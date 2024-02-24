@@ -1,10 +1,11 @@
 #!/bin/zsh
 set -eu
+setopt +o nomatch
 
 BD="$(pwd)/$(dirname $0)/.."
 source "${BD}/bin/variables.sh"
 
-OPT_LEVEL=0
+OPT_LEVEL=3
 while getopts o: flag; do
     case "${flag}" in
     o) OPT_LEVEL=${OPTARG} ;;
@@ -26,6 +27,7 @@ function analyze_mem() {
         echo "\e[33mFAIL:\e[0m Memory leak detected."
         for f in $(ls /tmp/pointers); do
             echo "$f - $(cat /tmp/pointers/$f)"
+            exit 1
         done
     else
         echo "\e[32mSUCCESS:\e[0m No memory leak detected."
@@ -38,10 +40,12 @@ function analyze_mem() {
 pushd "${BD}"
 echo "Closing running instance"
 set +e
-echo "${BD}/test/artifacts"
-/bin/rm -rf "${BD}/test/artifacts"
 /bin/rm -rf /tmp/pointers/*
 /bin/rm -rf ${ARTIFACT_FOLDER}
+/bin/rm -rf ${LOG_FOLDER}
+
+mkdir -p ${LOG_FOLDER}
+
 
 PID=$(pgrep ${APP_NAME})
 set -e
@@ -60,6 +64,11 @@ fi
 
 echo "Running"
 if [ "${MODE}" = "TEST" ] || [ "${MODE}" = "DEBUG" ]; then
+    [ $(grep -c '^#define TEST 0' "${BD}/${COMMON_HEADER}") -eq 1 ] &&
+        sed -i.bak 's/^#define TEST 0/#define TEST 1/g' "${BD}/${COMMON_HEADER}"
+    [ $(grep -c '^#define MEMORY_CHECK 0' "${BD}/${COMMON_HEADER}") -eq 1 ] &&
+        sed -i.bak 's/^#define MEMORY_CHECK 0/#define MEMORY_CHECK 1/g' "${BD}/${COMMON_HEADER}"
+
     mkdir -p /tmp/pointers
     # Set up dir entries for testing.
     mkdir -p "${ARTIFACT_FOLDER}/empty/" \
@@ -70,6 +79,7 @@ if [ "${MODE}" = "TEST" ] || [ "${MODE}" = "DEBUG" ]; then
     touch "${ARTIFACT_FOLDER}/non-empty/inner/file.txt"
     touch "${ARTIFACT_FOLDER}/non-empty/inner/inner_l2/file.txt"
     touch "${ARTIFACT_FOLDER}/delete_me.txt"
+    touch "${ARTIFACT_FOLDER}/delete_me_2.txt"
 
     make MODE=TEST OPT=${OPT_LEVEL} 2>&1
     if [ "${MODE}" = "TEST" ]; then
@@ -87,6 +97,7 @@ if [ "${MODE}" = "TEST" ] || [ "${MODE}" = "DEBUG" ]; then
             else
                 echo -e "\n\n\e[31mFAIL:\e[0m The content of ${LOG_FILE_ERR} follows.\n\n"
                 cat "${LOG_FILE_ERR}"
+                exit 1
             fi
         else
             echo -e "\n\n\e[31mApplication not run.\e[0m\n\n"
@@ -97,10 +108,21 @@ if [ "${MODE}" = "TEST" ] || [ "${MODE}" = "DEBUG" ]; then
     else
         lldb ./"${BUILD_DIR}/${APP_NAME}"
     fi
-elif [ "${MODE}" = "BUILD" ]; then
+elif [ "${MODE}" = "BUILD" ] || [ "${MODE}" = "" ]; then
+    [ $(grep -c '^#define TEST 1' "${BD}/${COMMON_HEADER}") -eq 1 ] &&
+        sed -i.bak 's/^#define TEST 1/#define TEST 0/g' "${BD}/${COMMON_HEADER}"
+    [ $(grep -c '^#define MEMORY_CHECK 1' "${BD}/${COMMON_HEADER}") -eq 1 ] &&
+        sed -i.bak 's/^#define MEMORY_CHECK 1/#define MEMORY_CHECK 0/g' "${BD}/${COMMON_HEADER}"
+
     make OPT=${OPT_LEVEL} 2>&1
 else
-    make OPT=${OPT_LEVEL} 2>&1
+    echo "Allowed modes:"
+    echo " - test"
+    echo " - debug"
+    echo " - build"
+    echo " - (none)"
+fi
+if [ "${MODE}" = "" ]; then
     ./"${BUILD_DIR}/${APP_NAME}"
 fi
 popd
