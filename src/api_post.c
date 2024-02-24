@@ -72,10 +72,10 @@ HttpRespStatus api_post_handle_request(
     return request_handler(req_body_char_p, out_file_path_char_p);
 }
 
-HttpRespStatus _api_post_example(const char* file_content_char_p, char* out_file_path_char_p)
+HttpRespStatus _api_post_example(const char* payload_char_p, char* out_file_path_char_p)
 {
-    LOG_TRACE("Executing POST API example.");
-    UNUSED(file_content_char_p);
+    LOG_DEBUG("Executing POST API example.");
+    LOG_DEBUG("Payload: `%s`", payload_char_p);
     UNUSED(out_file_path_char_p);
     return NO_CONTENT_204;
 }

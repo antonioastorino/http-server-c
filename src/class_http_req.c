@@ -1,9 +1,6 @@
 #include "class_http_req.h"
 #include "class_string_array.h"
 #include <errno.h>
-#include <fcntl.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 Error _HttpReqObj_new(
