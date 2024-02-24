@@ -6,12 +6,16 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-Error HttpReqObj_new(const char* raw_request, HttpReqObj* out_http_req_obj)
+Error _HttpReqObj_new(
+    const char* file,
+    const int line,
+    const char* raw_request,
+    HttpReqObj* out_http_req_obj)
 {
     // Split the raw data into header and body.
     out_http_req_obj->header.method       = METHOD_UNKNOWN;
     out_http_req_obj->header.version      = VERSION_UNKNOWN;
-    StringArray raw_data_string_array_obj = StringArray_new(raw_request, "\r\n\r\n");
+    StringArray raw_data_string_array_obj = _StringArray_new(file, line, raw_request, "\r\n\r\n");
     LOG_INFO("Elements in the array: `%lu`", raw_data_string_array_obj.num_of_elements);
     if (raw_data_string_array_obj.num_of_elements < 2)
     {
@@ -31,7 +35,7 @@ Error HttpReqObj_new(const char* raw_request, HttpReqObj* out_http_req_obj)
     }
     else
     {
-        out_http_req_obj->body_string_obj = String_new(body);
+        out_http_req_obj->body_string_obj = _String_new(file, line, body);
     }
     StringArray_destroy(&raw_data_string_array_obj);
     return ERR_ALL_GOOD;

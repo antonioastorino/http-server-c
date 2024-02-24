@@ -1,15 +1,18 @@
+#include "api_get.h"
+#include "api_post.h"
 #include "class_string_array.h"
+#include "converter.h"
 #include "fs_utils.h"
 #include "http_resp_header.h"
-#ifndef __linux__
-#include <sys/param.h>
-#include <stdlib.h>
-#endif /* __linux__ */
+#include "http_resp_status.h"
+#include <stdlib.h> /* contains realpath() */
 
-#define HTTP_RESP_VERSION "HTTP/1.0"
+#define HTTP_RESP_VERSION "HTTP/1.1"
 #define ASSETS_DIR "assets"
 #define WWW_DIR "www"
 #define WWW_NOT_FOUND WWW_DIR "/pages/not_found.html"
+#define WWW_INTERNAL_SERVER_ERROR WWW_DIR "/pages/internal_server_error.html"
+#define WWW_SERVICE_UNAVAILABLE WWW_DIR "/pages/service_unavailable.html"
 #define WWW_FORBIDDEN WWW_DIR "/pages/forbidden.html"
 
 typedef enum
@@ -18,8 +21,12 @@ typedef enum
     dot_css,
     dot_js,
     dot_jpg,
+    dot_png,
     dot_ico,
     dot_txt,
+    dot_bin,
+    dot_log,
+    dot_tgz,
     dot_unrecognized,
     no_extension,
 } FileExtension;
@@ -34,7 +41,7 @@ typedef struct
 static ContentTypeMapItem content_type_map[] = {
     {
         .extension_char_p    = "html",
-        .content_type_char_p = "text/html",
+        .content_type_char_p = "text/html;charset=UTF-8",
         .extension_enum      = dot_html,
     },
     {
@@ -58,6 +65,11 @@ static ContentTypeMapItem content_type_map[] = {
         .extension_enum      = dot_jpg,
     },
     {
+        .extension_char_p    = "png",
+        .content_type_char_p = "image/png",
+        .extension_enum      = dot_png,
+    },
+    {
         .extension_char_p    = "ico",
         .content_type_char_p = "image/x-icon",
         .extension_enum      = dot_ico,
@@ -66,6 +78,21 @@ static ContentTypeMapItem content_type_map[] = {
         .extension_char_p    = "txt",
         .content_type_char_p = "text/plain",
         .extension_enum      = dot_txt,
+    },
+    {
+        .extension_char_p    = "bin",
+        .content_type_char_p = "application/octet-stream",
+        .extension_enum      = dot_bin,
+    },
+    {
+        .extension_char_p    = "log",
+        .content_type_char_p = "text/plain",
+        .extension_enum      = dot_log,
+    },
+    {
+        .extension_char_p    = "tgz",
+        .content_type_char_p = "application/tar+gzip",
+        .extension_enum      = dot_tgz,
     },
 };
 
@@ -135,6 +162,11 @@ void _http_resp_set_content_length(
     const off_t content_length,
     HttpRespHeader* out_http_resp_header_p)
 {
+#ifdef __linux__
+    LOG_TRACE("Setting content-length to `%ld`.", content_length);
+#else  /* __linux__ */
+    LOG_TRACE("Setting content-length to `%lld`.", content_length);
+#endif /* __linux__ */
     out_http_resp_header_p->content_length = content_length;
 }
 
@@ -145,6 +177,7 @@ void _http_resp_set_content_type(const char path[], HttpRespHeader* out_http_res
 
 void _make_http_resp_403(HttpRespHeader* out_http_resp_header_p)
 {
+    LOG_TRACE("Creating 403 response.");
     off_t file_size = 0;
     _http_resp_set_status(FORBIDDEN_403, out_http_resp_header_p);
     _http_resp_set_location(WWW_FORBIDDEN, out_http_resp_header_p);
@@ -155,6 +188,7 @@ void _make_http_resp_403(HttpRespHeader* out_http_resp_header_p)
 
 void _make_http_resp_404(HttpRespHeader* out_http_resp_header_p)
 {
+    LOG_TRACE("Creating 404 response.");
     off_t file_size = 0;
     _http_resp_set_status(NOT_FOUND_404, out_http_resp_header_p);
     _http_resp_set_location(WWW_NOT_FOUND, out_http_resp_header_p);
@@ -163,13 +197,119 @@ void _make_http_resp_404(HttpRespHeader* out_http_resp_header_p)
     _http_resp_set_content_type(WWW_NOT_FOUND, out_http_resp_header_p);
 }
 
+void _make_http_resp_500(HttpRespHeader* out_http_resp_header_p)
+{
+    LOG_TRACE("Creating 500 response.");
+    off_t file_size = 0;
+    _http_resp_set_status(INTERNAL_SERVER_ERROR_500, out_http_resp_header_p);
+    _http_resp_set_location(WWW_INTERNAL_SERVER_ERROR, out_http_resp_header_p);
+    fs_utils_get_file_size(WWW_INTERNAL_SERVER_ERROR, &file_size);
+    _http_resp_set_content_length(file_size, out_http_resp_header_p);
+    _http_resp_set_content_type(WWW_INTERNAL_SERVER_ERROR, out_http_resp_header_p);
+}
+
+void _make_http_resp_503(HttpRespHeader* out_http_resp_header_p)
+{
+    LOG_TRACE("Creating 503 response.");
+    off_t file_size = 0;
+    _http_resp_set_status(SERVICE_UNAVAILABLE_503, out_http_resp_header_p);
+    _http_resp_set_location(WWW_SERVICE_UNAVAILABLE, out_http_resp_header_p);
+    fs_utils_get_file_size(WWW_SERVICE_UNAVAILABLE, &file_size);
+    _http_resp_set_content_length(file_size, out_http_resp_header_p);
+    _http_resp_set_content_type(WWW_SERVICE_UNAVAILABLE, out_http_resp_header_p);
+}
+
 void _make_http_resp_200(const char path[], off_t file_size, HttpRespHeader* out_http_resp_header_p)
 {
+    LOG_TRACE("Creating 200 response.");
+
     _http_resp_set_status(OK_200, out_http_resp_header_p);
-    _http_resp_set_location(path, out_http_resp_header_p);
-    fs_utils_get_file_size(path, &file_size);
     _http_resp_set_content_length(file_size, out_http_resp_header_p);
+    _http_resp_set_location(path, out_http_resp_header_p);
     _http_resp_set_content_type(path, out_http_resp_header_p);
+}
+
+void _make_http_resp_599(const char path[], off_t file_size, HttpRespHeader* out_http_resp_header_p)
+{
+    LOG_TRACE("Creating 599 response.");
+
+    _http_resp_set_status(GENERIC_599, out_http_resp_header_p);
+    _http_resp_set_content_length(file_size, out_http_resp_header_p);
+    _http_resp_set_location(path, out_http_resp_header_p);
+    _http_resp_set_content_type(path, out_http_resp_header_p);
+}
+
+void _make_http_resp_204(HttpRespHeader* out_http_resp_header_p)
+{
+    LOG_TRACE("Creating 204 response.");
+    _http_resp_set_status(NO_CONTENT_204, out_http_resp_header_p);
+    _http_resp_set_content_length(0, out_http_resp_header_p);
+}
+
+void _make_http_resp(
+    HttpRespStatus req_status,
+    char* file_path_char_p,
+    HttpRespHeader* out_http_resp_header_p)
+{
+    switch (req_status)
+    {
+    case OK_200:
+    {
+        off_t file_size;
+        if (is_err(fs_utils_get_file_size(file_path_char_p, &file_size)))
+        {
+            LOG_ERROR("Could not retrieve file size");
+            _make_http_resp_500(out_http_resp_header_p);
+        }
+        else
+        {
+            _make_http_resp_200(file_path_char_p, file_size, out_http_resp_header_p);
+        }
+        break;
+    }
+    case NO_CONTENT_204:
+    {
+        _make_http_resp_204(out_http_resp_header_p);
+        break;
+    }
+    case FORBIDDEN_403:
+    {
+        _make_http_resp_403(out_http_resp_header_p);
+        break;
+    }
+    case NOT_FOUND_404:
+    {
+        _make_http_resp_404(out_http_resp_header_p);
+        break;
+    }
+    case INTERNAL_SERVER_ERROR_500:
+    {
+        _make_http_resp_500(out_http_resp_header_p);
+        break;
+    }
+    case SERVICE_UNAVAILABLE_503:
+    {
+        _make_http_resp_503(out_http_resp_header_p);
+        break;
+    }
+     case GENERIC_599:
+    {
+        off_t file_size;
+        if (is_err(fs_utils_get_file_size(file_path_char_p, &file_size)))
+        {
+            LOG_ERROR("Could not retrieve file size");
+            _make_http_resp_500(out_http_resp_header_p);
+        }
+        else
+        {
+            _make_http_resp_599(file_path_char_p, file_size, out_http_resp_header_p);
+        }
+        break;
+    }
+    case RESP_STATUS_UNDEFINED:
+        LOG_WARNING("Falling back to default response");
+        _make_http_resp_404(out_http_resp_header_p);
+    }
 }
 
 void http_resp_header_init_GET(
@@ -182,12 +322,18 @@ void http_resp_header_init_GET(
     // requested or because there was an error.
     out_http_resp_header_p->content_length   = 0;
     StringArray parsed_path_string_array_obj = StringArray_new(http_req_header_p->location, "?");
-    const char* location                     = parsed_path_string_array_obj.str_array_char_p[0];
+    const char* location_char_p              = parsed_path_string_array_obj.str_array_char_p[0];
+    StringArray parameters_string_array_obj  = StringArray_empty();
+    if (parsed_path_string_array_obj.num_of_elements == 2)
+    {
+        parameters_string_array_obj
+            = StringArray_new(parsed_path_string_array_obj.str_array_char_p[1], "&");
+    }
     char resolved_path[PATH_MAX];
-    if (make_local_path(location, local_path))
+    off_t file_size = 0;
+    if (make_local_path(location_char_p, local_path))
     {
         // It's a path to a file.
-        off_t file_size = 0;
         LOG_INFO("Found location `%s`.", local_path);
         if (realpath(local_path, resolved_path) == NULL)
         {
@@ -197,7 +343,7 @@ void http_resp_header_init_GET(
         else if (is_err(fs_utils_get_file_size(resolved_path, &file_size)))
         {
             LOG_ERROR("Could not retrieve file size");
-            _make_http_resp_403(out_http_resp_header_p);
+            _make_http_resp_500(out_http_resp_header_p);
         }
         else
         {
@@ -206,20 +352,30 @@ void http_resp_header_init_GET(
     }
     else
     {
-        //        is_endpoint(location)
-        LOG_ERROR("API `%s` not handled yet.", local_path);
-        _make_http_resp_404(out_http_resp_header_p);
+        // It could be an API
+        char file_path_char_p[PATH_MAX] = {0};
+        HttpRespStatus req_status       = api_get_handle_request(
+            location_char_p, &parameters_string_array_obj, file_path_char_p);
+        _make_http_resp(req_status, file_path_char_p, out_http_resp_header_p);
     }
     StringArray_destroy(&parsed_path_string_array_obj);
-    // It could be an API
+    StringArray_destroy(&parameters_string_array_obj);
 }
 
 void http_resp_header_init_POST(
     const HttpReqHeader* http_req_header_p,
+    const String* http_req_body_string_p,
     HttpRespHeader* out_http_resp_header_p)
 {
-    UNUSED(http_req_header_p);
-    UNUSED(out_http_resp_header_p);
+    LOG_DEBUG("Trying to handle POST request");
+    out_http_resp_header_p->status           = RESP_STATUS_UNDEFINED;
+    StringArray parsed_path_string_array_obj = StringArray_new(http_req_header_p->location, "?");
+    const char* uri                          = parsed_path_string_array_obj.str_array_char_p[0];
+    char file_path_char_p[PATH_MAX];
+    HttpRespStatus req_status
+        = api_post_handle_request(uri, http_req_body_string_p->str, file_path_char_p);
+    _make_http_resp(req_status, file_path_char_p, out_http_resp_header_p);
+    StringArray_destroy(&parsed_path_string_array_obj);
 }
 
 const char* http_resp_reason_phrase(HttpRespStatus http_resp_status)
@@ -227,15 +383,21 @@ const char* http_resp_reason_phrase(HttpRespStatus http_resp_status)
     switch (http_resp_status)
     {
     case OK_200:
-        return "200 OK";
+        return "OK";
+    case NO_CONTENT_204:
+        return "No Content";
     case FORBIDDEN_403:
-        return "403 Forbidden";
+        return "Forbidden";
     case NOT_FOUND_404:
-        return "404 Not Found";
+        return "Not Found";
+    case INTERNAL_SERVER_ERROR_500:
+        return "Internal Server Error";
+    case SERVICE_UNAVAILABLE_503:
+        return "Service Unavailable";
+    case GENERIC_599:
+        return "Generic Error";
     case RESP_STATUS_UNDEFINED:
         return "UNDEFINED";
-    default:
-        return "INVALID STATUS";
     }
     return "";
 }
@@ -253,11 +415,12 @@ Error http_resp_header_to_string(
     if (http_resp_header_p->content_length > 0)
     {
         *out_resp_header_string_obj_p = String_new(
-            "%s %s\r\n"
+            "%s %d %s\r\n"
             "Content-Length: %lu\r\n"
             "Content-Type: %s\r\n"
             "\r\n",
             HTTP_RESP_VERSION,
+            http_resp_header_p->status,
             http_resp_reason_phrase(http_resp_header_p->status),
             http_resp_header_p->content_length,
             http_resp_header_p->content_type);
@@ -265,9 +428,10 @@ Error http_resp_header_to_string(
     else
     {
         *out_resp_header_string_obj_p = String_new(
-            "%s %s\r\n"
+            "%s %d %s\r\n"
             "\r\n",
             HTTP_RESP_VERSION,
+            http_resp_header_p->status,
             http_resp_reason_phrase(http_resp_header_p->status));
     }
     return ERR_ALL_GOOD;
@@ -280,15 +444,19 @@ void test_http_resp_header()
     PRINT_TEST_TITLE("Response string");
     {
         HttpRespStatus http_resp_status = OK_200;
-        ASSERT_EQ("200 OK", http_resp_reason_phrase(http_resp_status), "Correct string");
+        ASSERT_EQ("OK", http_resp_reason_phrase(http_resp_status), "Correct string");
+        http_resp_status = NO_CONTENT_204;
+        ASSERT_EQ("No Content", http_resp_reason_phrase(http_resp_status), "Correct string");
         http_resp_status = FORBIDDEN_403;
-        ASSERT_EQ("403 Forbidden", http_resp_reason_phrase(http_resp_status), "Correct string");
+        ASSERT_EQ("Forbidden", http_resp_reason_phrase(http_resp_status), "Correct string");
         http_resp_status = NOT_FOUND_404;
-        ASSERT_EQ("404 Not Found", http_resp_reason_phrase(http_resp_status), "Correct string");
+        ASSERT_EQ("Not Found", http_resp_reason_phrase(http_resp_status), "Correct string");
+        http_resp_status = GENERIC_599;
+        ASSERT_EQ("Generic Error", http_resp_reason_phrase(http_resp_status), "Correct string");
         http_resp_status = RESP_STATUS_UNDEFINED;
         ASSERT_EQ("UNDEFINED", http_resp_reason_phrase(http_resp_status), "Correct string");
         http_resp_status = 10;
-        ASSERT_EQ("INVALID STATUS", http_resp_reason_phrase(http_resp_status), "Correct string");
+        ASSERT_EQ("", http_resp_reason_phrase(http_resp_status), "Correct empty string");
     }
     PRINT_TEST_TITLE("Separate file paths from parameters in URL");
     {
@@ -301,7 +469,8 @@ void test_http_resp_header()
         char resolved_path[PATH_MAX];
         realpath("www/index.html", resolved_path);
         ASSERT_EQ(resolved_path, http_resp_header.actual_location, "Actual location correct.");
-        ASSERT_EQ(http_resp_header.content_type, "text/html", "Content-Type correct.");
+        ASSERT_EQ(
+            http_resp_header.content_type, "text/html;charset=UTF-8", "Content-Type correct.");
         ASSERT(http_resp_header.content_length > 0, "Content-Length grater than zero.");
     }
     PRINT_TEST_TITLE("Mach file extension")
@@ -310,7 +479,7 @@ void test_http_resp_header()
         ASSERT(
             match_content_type("file_name.html", &content_type_char_p) == dot_html,
             "html matched.");
-        ASSERT_EQ(content_type_char_p, "text/html", "Content-Type correct");
+        ASSERT_EQ(content_type_char_p, "text/html;charset=UTF-8", "Content-Type correct");
         ASSERT(
             match_content_type("file_name.css", &content_type_char_p) == dot_css, "css matched.");
         ASSERT_EQ(content_type_char_p, "text/css", "Content-Type correct");

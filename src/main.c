@@ -155,9 +155,8 @@ int main(int argc, char* argv[])
     return ERR_ALL_GOOD;
 }
 #elif TEST == 1
-// void test_api_get();
-// void test_api_post();
-// void test_api_common();
+void test_api_get();
+void test_api_post();
 int main()
 {
     logger_init(NULL, NULL);
@@ -165,9 +164,8 @@ int main()
     test_http_resp_header();
     test_class_http_req();
     test_class_http_resp();
-    //    test_api_get();
-    //    test_api_post();
-    //    test_api_common();
+    test_api_get();
+    test_api_post();
 }
 #else
 #error "TEST must be 0 or 1"
