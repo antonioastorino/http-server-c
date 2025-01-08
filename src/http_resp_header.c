@@ -438,7 +438,7 @@ Error http_resp_header_to_string(
 }
 
 #if TEST == 1
-void test_http_resp_header()
+void test_http_resp_header(void)
 {
     PRINT_BANNER();
     PRINT_TEST_TITLE("Response string");

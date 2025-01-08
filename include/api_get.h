@@ -7,7 +7,7 @@
 HttpRespStatus api_get_handle_request(const char*, const StringArray*, char*);
 
 #if TEST == 1
-void test_api_get();
+void test_api_get(void);
 #endif /* TEST == 1 */
 #endif /* API_GET_H */
 //

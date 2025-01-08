@@ -6,6 +6,6 @@
 HttpRespStatus api_post_handle_request(const char*, const char*, char*);
 
 #if TEST == 1
-void test_api_post();
+void test_api_post(void);
 #endif /* TEST == 1 */
 #endif /* API_POST_H */

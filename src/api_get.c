@@ -77,7 +77,7 @@ HttpRespStatus _api_get_example_with_no_content(
 }
 
 #if TEST == 1
-void test_api_get()
+void test_api_get(void)
 {
     PRINT_BANNER();
     PRINT_TEST_TITLE("Test api GET");

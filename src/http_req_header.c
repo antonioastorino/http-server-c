@@ -101,7 +101,7 @@ Error http_req_header_init(const char* header_str_p, HttpReqHeader* out_http_req
 }
 
 #if TEST == 1
-void test_http_req_header()
+void test_http_req_header(void)
 {
     PRINT_BANNER();
     PRINT_TEST_TITLE("Parsing method - pass");

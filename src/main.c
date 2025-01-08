@@ -53,7 +53,7 @@ void wait_with_timeout(int pid)
     }
 }
 
-Error handle_request()
+Error handle_request(void)
 {
     char in_buff[TCP_MAX_MSG_LEN] = {0};
     Error ret_result              = ERR_ALL_GOOD;
@@ -155,9 +155,9 @@ int main(int argc, char* argv[])
     return ERR_ALL_GOOD;
 }
 #elif TEST == 1
-void test_api_get();
-void test_api_post();
-int main()
+void test_api_get(void);
+void test_api_post(void);
+int main(void)
 {
     logger_init(NULL, NULL);
     test_http_req_header();

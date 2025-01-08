@@ -6,7 +6,6 @@ LOG_FILE_ERR="${LOG_FOLDER}/err.log"
 COMMON_HEADER="mylibc/include/common.h"
 COMMON_ERROR="mylibc/include/error.h"
 APP_ERROR="include/app_error.h"
-FLAGS="-Wall -Wextra -std=c11 -include ${APP_ERROR}"
 COMPILER="clang"
 LIB=""
 BUILD_DIR="build"
@@ -22,6 +21,7 @@ FLAGS=(
     -Wall
     -Wextra
     -std=c11
+    -pedantic
     -include ${APP_ERROR}
     -DLOG_LEVEL=5
 )

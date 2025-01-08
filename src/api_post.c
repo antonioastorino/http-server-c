@@ -81,7 +81,7 @@ HttpRespStatus _api_post_example(const char* payload_char_p, char* out_file_path
 }
 
 #if TEST == 1
-void test_api_post()
+void test_api_post(void)
 {
     PRINT_BANNER();
     PRINT_TEST_TITLE("Test POST api");

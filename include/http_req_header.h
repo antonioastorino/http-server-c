@@ -28,7 +28,7 @@ typedef struct
 Error http_req_header_init(const char*, HttpReqHeader*);
 
 #if TEST == 1
-void test_http_req_header();
+void test_http_req_header(void);
 #endif
 
 #endif /* HTTP_REQ_HEADER_H */

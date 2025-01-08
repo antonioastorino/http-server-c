@@ -49,7 +49,7 @@ Error HttpReqObj_destroy(HttpReqObj* http_req_obj_p)
 }
 
 #if TEST == 1
-void test_class_http_req()
+void test_class_http_req(void)
 {
     PRINT_BANNER();
     PRINT_TEST_TITLE("Initialize request");

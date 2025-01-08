@@ -19,6 +19,6 @@ void http_resp_header_init_POST(const HttpReqHeader*, const String*, HttpRespHea
 Error http_resp_header_to_string(const HttpRespHeader*, String*);
 
 #if TEST == 1
-void test_http_resp_header();
+void test_http_resp_header(void);
 #endif
 #endif /* HTTP_RESP_HEADER */

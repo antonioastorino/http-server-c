@@ -20,6 +20,6 @@ Error HttpReqObj_destroy(HttpReqObj*);
     String_empty(var_name##body);                                                                  \
     HttpReqObj var_name = {.body_string_obj = var_name##body}
 #if TEST == 1
-void test_class_http_req();
+void test_class_http_req(void);
 #endif /* TEST == 1 */
 #endif /* CLASS_HTTP_REQ_H */

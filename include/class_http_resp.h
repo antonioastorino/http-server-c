@@ -16,6 +16,6 @@ Error HttpRespObj_destroy(HttpRespObj*);
 #define HttpRespObj_empty(var_name) HttpRespObj var_name
 
 #if TEST == 1
-void test_class_http_resp();
+void test_class_http_resp(void);
 #endif
 #endif /* CLASS_HTTP_RESP_H */

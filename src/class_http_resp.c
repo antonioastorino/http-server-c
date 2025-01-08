@@ -32,5 +32,5 @@ Error HttpRespObj_destroy(HttpRespObj* http_resp_obj_p)
 }
 
 #if TEST == 1
-void test_class_http_resp() {}
+void test_class_http_resp(void) {}
 #endif /* TEST == 1 */
