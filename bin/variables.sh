@@ -20,7 +20,7 @@ SRC_PATHS=("src" "mylibc/src")
 FLAGS=(
     -Wall
     -Wextra
-    -std=c11
+    -std=c2x
     -pedantic
     -include ${APP_ERROR}
     -DLOG_LEVEL=5
