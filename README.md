@@ -1,14 +1,16 @@
-# CWS - C Web Server
+# C Web Server
 
 Building a Web Server in C, from scratch.
 
-Compile with
+Configure with
 ```
 bin/makeMakefile.sh
+```
+Compile with
+```
 bin/run.sh
 ```
-or
+Run tests with
 ```
 bin/run.sh test
 ```
-to run the unit test.
