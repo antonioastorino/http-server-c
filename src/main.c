@@ -8,77 +8,45 @@
 #include "fs_utils.h"
 #include "http_resp_header.h"
 #include "tcp_utils.h"
-#include <signal.h>
-#include <stdlib.h> /* contains exit() and getenv() */
-#include <sys/wait.h>
-#include <unistd.h>
+#include <stdlib.h> /* free() */
+#include <pthread.h>
 
 #define MAX_ATTEMPTS 100
-
-void wait_with_timeout(int pid)
+typedef struct
 {
-    LOG_INFO("Waiting for process with ID `%d` to be done.", pid);
-    for (uint8_t attempt = 0; attempt <= MAX_ATTEMPTS; attempt++)
-    {
-        // TODO: replace usleep() with nanosleep();
-        usleep(50000);
-        int process_exit_status;
-        int watched_pid = waitpid(pid, &process_exit_status, WNOHANG);
-        if (watched_pid == 0)
-        {
-            LOG_WARNING("Attempt: `%d` - The process with ID `%d` is not done yet.", attempt, pid);
-            if (attempt == MAX_ATTEMPTS)
-            {
-                LOG_WARNING("Timer expired. Killing PID `%d`.", pid);
-                kill(pid, SIGTERM);
-                usleep(20000);
-                if (waitpid(pid, &process_exit_status, WNOHANG) != pid)
-                {
-                    LOG_ERROR("The process with ID `%d` is a zombie.", pid);
-                }
-                return;
-            }
-        }
-        else if (watched_pid == -1)
-        {
-            LOG_PERROR("waitpid() failed while waiting for `%d`.", pid);
-            return;
-        }
-        else
-        {
-            LOG_INFO(
-                "Child `%d` done. Exited with status `%d`.", pid, WEXITSTATUS(process_exit_status));
-            return;
-        }
-    }
-}
+    int thread_id;
+    Error out_result;
+} ThreadData;
 
-Error handle_request(void)
+void* handle_request(void* thread_data_void_p)
 {
     char in_buff[TCP_MAX_MSG_LEN] = {0};
-    Error ret_result              = ERR_ALL_GOOD;
+    ThreadData* thread_data_p     = (ThreadData*)thread_data_void_p;
+    thread_data_p->out_result     = ERR_ALL_GOOD;
+
     HttpReqObj_empty(http_req_obj);
     HttpRespObj_empty(http_resp_obj);
     String_empty(http_resp_header_string_obj);
-    if (is_err(ret_result = tcp_utils_read(in_buff)))
+    LOG_INFO("Thread %d handling request", thread_data_p->thread_id);
+    if (is_err(thread_data_p->out_result = tcp_utils_read(in_buff)))
     {
         LOG_ERROR("[CHILD] Failed to read input message.");
     }
-    else if (is_err(ret_result = HttpReqObj_new(in_buff, &http_req_obj)))
+    else if (is_err(thread_data_p->out_result = HttpReqObj_new(in_buff, &http_req_obj)))
     {
         LOG_ERROR("[CHILD] Failed to create request object.");
     }
-    else if (is_err(ret_result = HttpRespObj_new(&http_req_obj, &http_resp_obj)))
+    else if (is_err(thread_data_p->out_result = HttpRespObj_new(&http_req_obj, &http_resp_obj)))
     {
         LOG_ERROR("[CHILD] Failed to create response object.");
     }
     else if (is_err(
-                 ret_result
+                 thread_data_p->out_result
                  = http_resp_header_to_string(&http_resp_obj.header, &http_resp_header_string_obj)))
     {
         LOG_ERROR("[CHILD] Failed to create response object.");
     }
-    else if (is_err(ret_result = tcp_utils_write(http_resp_header_string_obj.str)))
+    else if (is_err(thread_data_p->out_result = tcp_utils_write(http_resp_header_string_obj.str)))
     {
         LOG_ERROR("[CHILD] Failed to send header.");
     }
@@ -87,7 +55,7 @@ Error handle_request(void)
         LOG_INFO("[CHILD] Content-Length zero. Nothing to send.");
     }
     else if (is_err(
-                 ret_result = tcp_utils_send_file(
+                 thread_data_p->out_result = tcp_utils_send_file(
                      http_resp_obj.header.actual_location, http_resp_obj.header.content_length)))
     {
         LOG_ERROR("[CHILD] Failed to send payload.");
@@ -99,8 +67,9 @@ Error handle_request(void)
     HttpRespObj_destroy(&http_resp_obj);
     HttpReqObj_destroy(&http_req_obj);
     String_destroy(&http_resp_header_string_obj);
-    return ret_result;
+    return NULL;
 }
+
 #if TEST == 0
 int main(int argc, char* argv[])
 {
@@ -117,7 +86,7 @@ int main(int argc, char* argv[])
         printf("Invalid parameters\n");
         return ERR_INVALID;
     }
-    char* logger_out_file_str = "/tmp/app.log";
+    char* logger_out_file_str = NULL;
     logger_init(logger_out_file_str, logger_out_file_str);
     return_on_err(tcp_utils_server_init(8081));
     LOG_INFO("Server running");
@@ -126,31 +95,31 @@ int main(int argc, char* argv[])
         if (is_err(tcp_utils_accept()))
         {
             LOG_ERROR("Failed to accept connection.");
-            return -1;
+            return ERR_FATAL;
         }
-
-        int pid = fork();
-        if (pid < 0)
+        ThreadData* thread_data_p = (ThreadData*)malloc(sizeof(ThreadData));
+        if (thread_data_p == NULL)
         {
-            LOG_PERROR("Fatal");
-            exit(errno);
+            LOG_ERROR("FATAL: cannot allocate memory");
+            return ERR_FATAL;
         }
-        if (pid == 0)
+        pthread_t client_tread_id;
+        int thread_create_result
+            = pthread_create(&client_tread_id, NULL, handle_request, (void*)thread_data_p);
+        if (thread_create_result != 0)
         {
-            // Child process
-            tcp_utils_close_server_socket();
-            Error ret_result = handle_request();
-            tcp_utils_close_client_socket();
-
-            return ret_result;
+            LOG_ERROR("FATAL: Failed to create thread: `%d`", thread_create_result);
+            return ERR_FATAL;
         }
-        else
+        pthread_join(client_tread_id, NULL);
+        if (thread_data_p->out_result != ERR_ALL_GOOD)
         {
-            // Parent process
-            tcp_utils_close_client_socket();
-            wait_with_timeout(pid);
+            LOG_ERROR("Something went wrong when handling request");
         }
+        free(thread_data_p);
+        tcp_utils_close_client_socket();
     }
+    tcp_utils_close_server_socket();
 
     return ERR_ALL_GOOD;
 }
