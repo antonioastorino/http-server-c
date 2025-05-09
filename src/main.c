@@ -14,7 +14,7 @@
 #define MAX_ATTEMPTS 100
 typedef struct
 {
-    int thread_id;
+    int client_socket;
     Error out_result;
 } ThreadData;
 
@@ -24,49 +24,55 @@ void* handle_request(void* thread_data_void_p)
     ThreadData* thread_data_p     = (ThreadData*)thread_data_void_p;
     thread_data_p->out_result     = ERR_ALL_GOOD;
 
+    LOG_INFO("[SOCKET `%d`] Handling request.", thread_data_p->client_socket);
     HttpReqObj_empty(http_req_obj);
     HttpRespObj_empty(http_resp_obj);
     String_empty(http_resp_header_string_obj);
-    LOG_INFO("Thread %d handling request", thread_data_p->thread_id);
-    if (is_err(thread_data_p->out_result = tcp_utils_read(in_buff)))
+    if (is_err(thread_data_p->out_result = tcp_utils_read(in_buff, thread_data_p->client_socket)))
     {
-        LOG_ERROR("[CHILD] Failed to read input message.");
+        LOG_ERROR("[SOCKET `%d`] Failed to read input message.", thread_data_p->client_socket);
     }
     else if (is_err(thread_data_p->out_result = HttpReqObj_new(in_buff, &http_req_obj)))
     {
-        LOG_ERROR("[CHILD] Failed to create request object.");
+        LOG_ERROR("[SOCKET `%d`] Failed to create request object.", thread_data_p->client_socket);
     }
     else if (is_err(thread_data_p->out_result = HttpRespObj_new(&http_req_obj, &http_resp_obj)))
     {
-        LOG_ERROR("[CHILD] Failed to create response object.");
+        LOG_ERROR("[SOCKET `%d`] Failed to create response object.", thread_data_p->client_socket);
     }
     else if (is_err(
                  thread_data_p->out_result
                  = http_resp_header_to_string(&http_resp_obj.header, &http_resp_header_string_obj)))
     {
-        LOG_ERROR("[CHILD] Failed to create response object.");
+        LOG_ERROR("[SOCKET `%d`] Failed to create response object.", thread_data_p->client_socket);
     }
-    else if (is_err(thread_data_p->out_result = tcp_utils_write(http_resp_header_string_obj.str)))
+    else if (is_err(
+                 thread_data_p->out_result
+                 = tcp_utils_write(http_resp_header_string_obj.str, thread_data_p->client_socket)))
     {
-        LOG_ERROR("[CHILD] Failed to send header.");
+        LOG_ERROR("[SOCKET `%d`] Failed to send header.", thread_data_p->client_socket);
     }
     else if (http_resp_obj.header.content_length == 0)
     {
-        LOG_INFO("[CHILD] Content-Length zero. Nothing to send.");
+        LOG_INFO("[SOCKET `%d`] Content-Length zero. Nothing to send.", thread_data_p->client_socket);
     }
     else if (is_err(
                  thread_data_p->out_result = tcp_utils_send_file(
-                     http_resp_obj.header.actual_location, http_resp_obj.header.content_length)))
+                     http_resp_obj.header.actual_location,
+                     http_resp_obj.header.content_length,
+                     thread_data_p->client_socket)))
     {
-        LOG_ERROR("[CHILD] Failed to send payload.");
+        LOG_ERROR("[SOCKET `%d`] Failed to send payload.", thread_data_p->client_socket);
     }
     else
     {
-        LOG_TRACE("[CHILD] Done.");
+        LOG_INFO("[SOCKET `%d`] Request handled`.", thread_data_p->client_socket);
     }
     HttpRespObj_destroy(&http_resp_obj);
     HttpReqObj_destroy(&http_req_obj);
     String_destroy(&http_resp_header_string_obj);
+    tcp_utils_close_client_socket(thread_data_p->client_socket);
+    free(thread_data_p);
     return NULL;
 }
 
@@ -92,15 +98,18 @@ int main(int argc, char* argv[])
     LOG_INFO("Server running");
     while (1)
     {
-        if (is_err(tcp_utils_accept()))
+        LOG_INFO("Ready for request.");
+        int client_socket = 0;
+        if (is_err(tcp_utils_accept(&client_socket)))
         {
             LOG_ERROR("Failed to accept connection.");
             return ERR_FATAL;
         }
-        ThreadData* thread_data_p = (ThreadData*)malloc(sizeof(ThreadData));
+        ThreadData* thread_data_p    = (ThreadData*)malloc(sizeof(ThreadData));
+        thread_data_p->client_socket = client_socket;
         if (thread_data_p == NULL)
         {
-            LOG_ERROR("FATAL: cannot allocate memory");
+            LOG_ERROR("FATAL: cannot allocate memory.");
             return ERR_FATAL;
         }
         pthread_t client_tread_id;
@@ -108,16 +117,9 @@ int main(int argc, char* argv[])
             = pthread_create(&client_tread_id, NULL, handle_request, (void*)thread_data_p);
         if (thread_create_result != 0)
         {
-            LOG_ERROR("FATAL: Failed to create thread: `%d`", thread_create_result);
+            LOG_ERROR("FATAL: Failed to create thread: `%d`.", thread_create_result);
             return ERR_FATAL;
         }
-        pthread_join(client_tread_id, NULL);
-        if (thread_data_p->out_result != ERR_ALL_GOOD)
-        {
-            LOG_ERROR("Something went wrong when handling request");
-        }
-        free(thread_data_p);
-        tcp_utils_close_client_socket();
     }
     tcp_utils_close_server_socket();
 
