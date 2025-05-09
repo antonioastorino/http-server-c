@@ -8,6 +8,7 @@
 #include "fs_utils.h"
 #include "http_resp_header.h"
 #include "tcp_utils.h"
+#include <signal.h>
 #include <stdlib.h> /* free() */
 #include <pthread.h>
 
@@ -17,6 +18,10 @@ typedef struct
     int client_socket;
     Error out_result;
 } ThreadData;
+
+void sig_handler(int signal) {
+    LOG_ERROR("------ Connection closed by client - signal `%d`. ------\n", signal);
+}
 
 void* handle_request(void* thread_data_void_p)
 {
@@ -79,6 +84,10 @@ void* handle_request(void* thread_data_void_p)
 #if TEST == 0
 int main(int argc, char* argv[])
 {
+    struct sigaction sa;
+    sa.sa_handler = &sig_handler;
+    sa.sa_flags = SA_RESTART;
+    sigaction(SIGPIPE, &sa, NULL);
     if (argc == 2)
     {
         if (strncmp(argv[1], "-v\0", 3) == 0)
@@ -92,7 +101,7 @@ int main(int argc, char* argv[])
         printf("Invalid parameters\n");
         return ERR_INVALID;
     }
-    char* logger_out_file_str = NULL;
+    char* logger_out_file_str = "/tmp/app.log";
     logger_init(logger_out_file_str, logger_out_file_str);
     return_on_err(tcp_utils_server_init(8081));
     LOG_INFO("Server running");
