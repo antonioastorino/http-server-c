@@ -12,7 +12,6 @@
 #include <stdlib.h> /* free() */
 #include <pthread.h>
 
-#define MAX_ATTEMPTS 100
 typedef struct
 {
     int client_socket;
